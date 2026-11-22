@@ -1,0 +1,7 @@
+# 本地发布包和已解压的历史版本
+/agentic-knowledge-kit-v*.zip
+/agentic-knowledge-kit-v*/
+
+# Python 缓存
+__pycache__/
+*.py[cod]

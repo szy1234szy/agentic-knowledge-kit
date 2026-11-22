@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "records": [
+    {
+      "id": "INC-DEMO-001",
+      "kind": "incident",
+      "status": "proposed",
+      "path": "examples/INC-DEMO-001.md",
+      "scope": [
+        "**/auth/**"
+      ],
+      "evidence": [],
+      "relations": []
+    },
+    {
+      "id": "INV-DEMO-001",
+      "kind": "invariant",
+      "status": "proposed",
+      "path": "examples/INV-DEMO-001.md",
+      "scope": [
+        "**/auth/**"
+      ],
+      "evidence": [],
+      "relations": [
+        {
+          "type": "motivated_by",
+          "target": "INC-DEMO-001"
+        }
+      ]
+    },
+    {
+      "id": "ADR-DEMO-001",
+      "kind": "adr",
+      "status": "proposed",
+      "path": "examples/ADR-DEMO-001.md",
+      "scope": [
+        "**/auth/**"
+      ],
+      "evidence": [],
+      "relations": [
+        {
+          "type": "related_to",
+          "target": "INV-DEMO-001"
+        }
+      ]
+    },
+    {
+      "id": "RULE-DEMO-001",
+      "kind": "rule",
+      "status": "proposed",
+      "path": "examples/RULE-DEMO-001.md",
+      "scope": [
+        "**/auth/**"
+      ],
+      "evidence": [],
+      "relations": [
+        {
+          "type": "decided_by",
+          "target": "ADR-DEMO-001"
+        },
+        {
+          "type": "constrained_by",
+          "target": "INV-DEMO-001"
+        }
+      ]
+    },
+    {
+      "id": "EVID-DEMO-001",
+      "kind": "evidence",
+      "status": "unknown",
+      "path": "examples/EVID-DEMO-001.md",
+      "scope": [
+        "**/auth/**"
+      ],
+      "evidence": [],
+      "relations": [
+        {
+          "type": "related_to",
+          "target": "RULE-DEMO-001"
+        }
+      ]
+    }
+  ]
+}

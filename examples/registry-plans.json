@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "records": [
+    {
+      "id": "FEAT-KIT-PLAN",
+      "kind": "feature",
+      "status": "verified",
+      "path": "examples/feature-plans.md",
+      "plan": {"title": "功能计划与追溯"},
+      "scope": ["scripts/knowledge.py", "docs/knowledge/templates/feature-plan.md"],
+      "evidence": [
+        "file:scripts/test_knowledge.py#test_feature_dependencies_reject_cycles",
+        "file:scripts/test_knowledge.py#test_plans_filter_and_review_prerequisites",
+        "file:scripts/test_knowledge.py#test_impact_recovers_plan_when_related_constraint_changes"
+      ]
+    },
+    {
+      "id": "FEAT-DEMO-LINKS",
+      "kind": "feature",
+      "status": "proposed",
+      "path": "examples/feature-plans.md",
+      "plan": {"title": "检查工程文档链接"},
+      "relations": [{"type": "depends_on", "target": "FEAT-KIT-PLAN"}]
+    },
+    {
+      "id": "FEAT-DEMO-RENAME",
+      "kind": "feature",
+      "status": "proposed",
+      "path": "examples/feature-plans.md",
+      "plan": {"title": "文档重命名影响清单"},
+      "relations": [{"type": "depends_on", "target": "FEAT-DEMO-LINKS"}]
+    }
+  ]
+}

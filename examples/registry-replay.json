@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "records": [
+    {
+      "id": "INC-KIT-001",
+      "kind": "incident",
+      "status": "verified",
+      "path": "examples/registry-validation-replay.md",
+      "evidence": ["file:examples/registry-validation-replay.md#L9-L13"]
+    },
+    {
+      "id": "RULE-KIT-001",
+      "kind": "rule",
+      "status": "proposed",
+      "path": "examples/registry-validation-replay.md",
+      "scope": ["scripts/knowledge.py"],
+      "evidence": ["file:scripts/test_knowledge.py#test_malformed_fields_report_errors"],
+      "relations": [{"type": "motivated_by", "target": "INC-KIT-001"}]
+    }
+  ]
+}

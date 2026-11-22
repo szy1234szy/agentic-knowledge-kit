@@ -1,0 +1,328 @@
+{
+  "schema_version": 1,
+  "records": [
+    {
+      "id": "ARC-KIT-001",
+      "kind": "architecture",
+      "status": "implemented",
+      "path": "docs/self/project-understanding.md",
+      "scope": [
+        "install.py",
+        "scripts/knowledge.py",
+        ".agents/skills/**"
+      ],
+      "asset": {
+        "importance": "core",
+        "last_reviewed": "2026-11-22"
+      },
+      "evidence": [
+        "file:install.py",
+        "file:scripts/knowledge.py"
+      ],
+      "relations": [
+        {
+          "type": "decided_by",
+          "target": "ADR-KIT-001"
+        },
+        {
+          "type": "constrained_by",
+          "target": "INV-KIT-001"
+        },
+        {
+          "type": "decided_by",
+          "target": "ADR-KIT-002"
+        }
+      ],
+      "section": "关系"
+    },
+    {
+      "id": "CAP-KIT-001",
+      "kind": "capability",
+      "status": "implemented",
+      "path": "docs/self/project-understanding.md",
+      "scope": [
+        "scripts/knowledge.py",
+        "scripts/test_knowledge.py"
+      ],
+      "asset": {
+        "importance": "core",
+        "last_reviewed": "2026-11-22"
+      },
+      "relations": [
+        {
+          "type": "related_to",
+          "target": "ARC-KIT-001"
+        }
+      ],
+      "section": "边界"
+    },
+    {
+      "id": "ADR-KIT-001",
+      "kind": "adr",
+      "status": "accepted",
+      "path": "docs/self/records/adr-001.md",
+      "asset": {
+        "importance": "core",
+        "last_reviewed": "2026-11-22"
+      },
+      "evidence": [
+        "file:install.py#main"
+      ]
+    },
+    {
+      "id": "INV-KIT-001",
+      "kind": "invariant",
+      "status": "accepted",
+      "path": "docs/self/records/invariants.md",
+      "scope": [
+        "install.py",
+        "scripts/knowledge.py"
+      ],
+      "asset": {
+        "importance": "core",
+        "last_reviewed": "2026-11-22"
+      },
+      "evidence": [
+        "file:install.py#main",
+        "file:scripts/knowledge.py#review"
+      ],
+      "relations": [
+        {
+          "type": "verified_by",
+          "target": "EVID-KIT-INSTALL-001"
+        }
+      ]
+    },
+    {
+      "id": "FEAT-KIT-REVIEW-SCOPE",
+      "kind": "feature",
+      "status": "verified",
+      "path": "docs/self/records/feature-review-scope.md",
+      "plan": {
+        "title": "按资产类型复核"
+      },
+      "scope": [
+        "scripts/knowledge.py"
+      ],
+      "relations": [
+        {
+          "type": "constrained_by",
+          "target": "INV-KIT-001"
+        },
+        {
+          "type": "related_to",
+          "target": "ADR-KIT-001"
+        },
+        {
+          "type": "verified_by",
+          "target": "EVID-KIT-SELF-001"
+        }
+      ]
+    },
+    {
+      "id": "INC-KIT-REVIEW-ENCODING",
+      "kind": "incident",
+      "status": "verified",
+      "path": "docs/self/records/incident-review-encoding.md",
+      "scope": [
+        "scripts/knowledge.py"
+      ],
+      "relations": [
+        {
+          "type": "related_to",
+          "target": "INV-KIT-001"
+        },
+        {
+          "type": "verified_by",
+          "target": "EVID-KIT-ENCODING-001"
+        }
+      ]
+    },
+    {
+      "id": "EVID-KIT-SELF-001",
+      "kind": "evidence",
+      "status": "verified",
+      "path": "docs/self/records/verification.md",
+      "evidence": [
+        "file:scripts/test_knowledge.py#test_review_kind_limits_selection_and_document_reads"
+      ]
+    },
+    {
+      "id": "FEAT-KIT-IMPACT-EVIDENCE",
+      "kind": "feature",
+      "status": "verified",
+      "path": "docs/self/records/feature-impact-evidence.md",
+      "plan": {
+        "title": "证据变更影响反查"
+      },
+      "scope": [
+        "scripts/knowledge.py"
+      ],
+      "relations": [
+        {
+          "type": "constrained_by",
+          "target": "INV-KIT-001"
+        },
+        {
+          "type": "verified_by",
+          "target": "EVID-KIT-IMPACT-001"
+        }
+      ]
+    },
+    {
+      "id": "OPS-KIT-001",
+      "kind": "operations",
+      "status": "implemented",
+      "path": "docs/self/engineering-guide.md",
+      "asset": {
+        "importance": "core",
+        "last_reviewed": "2026-11-22"
+      },
+      "scope": [
+        "install.py"
+      ],
+      "relations": [
+        {
+          "type": "verified_by",
+          "target": "EVID-KIT-INSTALL-001"
+        },
+        {
+          "type": "decided_by",
+          "target": "ADR-KIT-001"
+        }
+      ],
+      "section": "安装与升级"
+    },
+    {
+      "id": "GUIDE-KIT-001",
+      "kind": "guide",
+      "status": "implemented",
+      "path": "docs/self/engineering-guide.md",
+      "asset": {
+        "importance": "core",
+        "last_reviewed": "2026-11-22"
+      },
+      "scope": [
+        "AGENTS.md",
+        ".agents/skills/**"
+      ],
+      "relations": [
+        {
+          "type": "related_to",
+          "target": "CAP-KIT-001"
+        }
+      ],
+      "section": "开发与知识同步"
+    },
+    {
+      "id": "QUALITY-KIT-001",
+      "kind": "quality",
+      "status": "implemented",
+      "path": "docs/self/engineering-guide.md",
+      "asset": {
+        "importance": "core",
+        "last_reviewed": "2026-11-22"
+      },
+      "scope": [
+        ".github/workflows/knowledge.yml",
+        "scripts/test_*.py"
+      ],
+      "section": "校验与发布"
+    },
+    {
+      "id": "EVID-KIT-ENCODING-001",
+      "kind": "evidence",
+      "status": "verified",
+      "path": "docs/self/records/incident-review-encoding.md",
+      "evidence": [
+        "file:scripts/test_knowledge.py#test_review_all_continues_after_unreadable_markdown"
+      ]
+    },
+    {
+      "id": "EVID-KIT-INSTALL-001",
+      "kind": "evidence",
+      "status": "verified",
+      "path": "docs/self/engineering-guide.md",
+      "evidence": [
+        "file:scripts/test_install.py#test_install_keeps_target_index_independent_from_kit"
+      ],
+      "section": "安装与升级"
+    },
+    {
+      "id": "EVID-KIT-IMPACT-001",
+      "kind": "evidence",
+      "status": "verified",
+      "path": "docs/self/records/verification-impact.md",
+      "evidence": [
+        "file:scripts/test_knowledge.py#test_impact_finds_current_assets_that_use_changed_evidence",
+        "file:scripts/test_self_knowledge.py#test_install_test_impact_finds_current_consumers"
+      ]
+    },
+    {
+      "id": "GUIDE-KIT-UNDERSTANDING",
+      "kind": "guide",
+      "status": "implemented",
+      "path": "docs/self/project-understanding.md",
+      "scope": [
+        ".agents/skills/project-view/**",
+        "docs/knowledge/templates/project-understanding.md",
+        "docs/README.md"
+      ],
+      "asset": {
+        "importance": "core",
+        "last_reviewed": "2026-11-22"
+      },
+      "relations": [
+        {
+          "type": "related_to",
+          "target": "ARC-KIT-001"
+        },
+        {
+          "type": "decided_by",
+          "target": "ADR-KIT-001"
+        },
+        {
+          "type": "decided_by",
+          "target": "ADR-KIT-002"
+        },
+        {
+          "type": "constrained_by",
+          "target": "INV-KIT-001"
+        },
+        {
+          "type": "related_to",
+          "target": "QUALITY-KIT-001"
+        }
+      ]
+    },
+    {
+      "id": "ADR-KIT-002",
+      "kind": "adr",
+      "status": "accepted",
+      "path": "docs/self/records/adr-002.md",
+      "asset": {
+        "importance": "core",
+        "last_reviewed": "2026-11-22"
+      },
+      "evidence": [
+        "file:scripts/knowledge.py#context",
+        "file:scripts/knowledge.py#impact",
+        "file:scripts/test_self_knowledge.py#test_self_index_and_core_workflows"
+      ]
+    },
+    {
+      "id": "RULE-KIT-EXTERNAL-001",
+      "kind": "rule",
+      "status": "proposed",
+      "path": "docs/self/records/external-code-review-proposal.md",
+      "scope": [
+        "scripts/**/*.py",
+        "install.py"
+      ],
+      "origin": {
+        "source": "AI 代码修改与复盘规范",
+        "locator": "修改完成后的交付 / 验证结果；输出原则"
+      }
+    }
+  ]
+}
