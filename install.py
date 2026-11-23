@@ -12,6 +12,7 @@ SKILLS = tuple(path.relative_to(ROOT) for path in sorted(ROOT.glob('.agents/skil
 ADDITIVE_ASSETS = {
     Path('docs/knowledge/archive/README.md'),
     Path('docs/knowledge/asset-management.md'),
+    Path('docs/knowledge/asset-generation.md'),
     Path('docs/knowledge/standards-intake.md'),
     *(Path('docs/knowledge/templates') / f'{name}.md' for name in
       ('feature-plan', 'architecture', 'feature-reference', 'engineering-reference', 'project-understanding')),

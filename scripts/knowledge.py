@@ -284,9 +284,14 @@ def workspace_files():
 
 def markdown_content_lines(source):
     """保留正文行号，跳过围栏中的示例代码。"""
+    return markdown_unfenced_lines(source.read_text(encoding='utf-8-sig').splitlines())
+
+
+def markdown_unfenced_lines(lines):
+    """遍历围栏外的 Markdown 行，保留原始行号。"""
     fence_pattern = re.compile(r'^ {0,3}(`{3,}|~{3,})(.*)$')
     fence = ''
-    for number, line in enumerate(source.read_text(encoding='utf-8-sig').splitlines(), 1):
+    for number, line in enumerate(lines, 1):
         marker = fence_pattern.match(line)
         if fence:
             if marker and marker[1].startswith(fence) and not marker[2].strip():
@@ -301,6 +306,27 @@ def markdown_heading(line):
     """提取 ATX 标题的正文。"""
     match = re.match(r'^ {0,3}#{1,6}[ \t]+(.+)$', line)
     return re.sub(r'[ \t]+#+[ \t]*$', '', match[1]).strip() if match else None
+
+
+def markdown_sections(body):
+    """提取唯一标题的正文及子章节内容，重复标题无法单独定位。"""
+    lines = body.removeprefix('\ufeff').splitlines()
+    headings = []
+    sections = {}
+    for number, line in markdown_unfenced_lines(lines):
+        if title := markdown_heading(line):
+            level = len(line.lstrip().split(maxsplit=1)[0])
+            headings.append((number - 1, level, title))
+    boundaries = []
+    for start, level, title in reversed(headings):
+        while boundaries and boundaries[-1][1] > level:
+            boundaries.pop()
+        end = boundaries[-1][0] if boundaries else len(lines)
+        boundaries.append((start, level))
+        while end > start + 1 and not lines[end - 1].strip():
+            end -= 1
+        sections[title] = None if title in sections else lines[start:end]
+    return sections
 
 
 def markdown_anchors(source):
@@ -522,6 +548,13 @@ def git_paths(base):
     return sorted(set((tracked + untracked).split('\0')) - {''})
 
 
+def git_file(commit, path):
+    """读取基线文件。基线中没有该路径时返回 None。"""
+    repo_path = git_output('rev-parse', '--show-prefix').rstrip('\n') + path
+    present = git_output('--literal-pathspecs', 'ls-tree', '--full-tree', '-z', commit, '--', repo_path)
+    return git_output('show', f'{commit}:{repo_path}') if present else None
+
+
 def registry_changes(records, registry, base, paths):
     """按 ID 对比基线中的有效内容，忽略核实时间等维护元数据。"""
     if not registry.resolve().is_relative_to(ROOT):
@@ -529,10 +562,8 @@ def registry_changes(records, registry, base, paths):
     path = registry.resolve().relative_to(ROOT).as_posix()
     if path not in paths:
         return {}
-    commit = git_commit(base)
-    repo_path = git_output('rev-parse', '--show-prefix').rstrip('\n') + path
-    present = git_output('--literal-pathspecs', 'ls-tree', '--full-tree', '-z', commit, '--', repo_path)
-    previous_records = parse_registry(git_output('show', f'{commit}:{repo_path}')) if present else []
+    previous_body = git_file(git_commit(base), path)
+    previous_records = parse_registry(previous_body) if previous_body is not None else []
     if any(not isinstance(record, dict) or not isinstance(record.get('id'), str) for record in previous_records):
         raise ValueError('baseline registry contains invalid record IDs')
     previous = {record['id']: record for record in previous_records}
@@ -585,7 +616,8 @@ def linked_impact(records, current, hits):
 
 def sync_check(records, registry, base, review_file=None, strict=False):
     """把代码变更命中的现行知识与新增更新或本次复核说明对应起来。"""
-    paths = set(git_paths(base))
+    commit = git_commit(base)
+    paths = set(git_paths(commit))
     reviewed = {}
     if review_file:
         review_path = local_path(review_file)
@@ -606,15 +638,30 @@ def sync_check(records, registry, base, review_file=None, strict=False):
                and not external_draft(record)]
     hits = path_matches(current, inputs)
     related = {record['id'] for record, _ in linked_impact(records, current, hits)} if hits else set()
-    changed_records = registry_changes(records, registry, base, paths)
+    changed_records = registry_changes(records, registry, commit, paths)
+    sections_by_path = {}
     pending = []
     for record in current:
         rid = record['id']
         if record['kind'] in {'evidence', 'incident'} or (rid not in hits and rid not in related):
             continue
-        if local_path(record['path']) not in paths and rid not in reviewed and rid not in changed_records:
-            pending.append(rid)
-            print(f'- {rid} | review {record_location(record)}')
+        if rid in reviewed or rid in changed_records:
+            continue
+        path = local_path(record['path'])
+        if path in paths and existing_file(path):
+            if not (section := record.get('section')):
+                continue
+            if path not in sections_by_path:
+                previous = git_file(commit, path)
+                before = markdown_sections(previous) if previous is not None else {}
+                after = markdown_sections((ROOT / path).read_text(encoding='utf-8-sig'))
+                sections_by_path[path] = before, after
+            before, after = sections_by_path[path]
+            if after.get(section) is not None and (section not in before or
+                   before[section] is not None and before[section] != after[section]):
+                continue
+        pending.append(rid)
+        print(f'- {rid} | review {record_location(record)}')
     print(f'{len(pending)} affected record(s) without a document, index update or review note')
     return int(strict and bool(pending))
 
@@ -750,22 +797,36 @@ def review(records, ids, review_all=False, *, kind=None, registry=REG):
     return 0
 
 
-def context(records, paths, ids, depth):
-    """按路径或 ID 选取种子，沿双向关系逐层展开并保留发现依据。"""
+def context(records, paths, ids, depth, queries=()):
+    """按路径、ID、名称选取候选，沿双向关系展开并保留发现依据。"""
     by_id = {record['id']: record for record in records}
     unknown = [rid for rid in ids if rid not in by_id]
     if unknown:
         raise ValueError('Unknown ID: ' + ', '.join(unknown))
 
-    hits = path_matches(sorted((record for record in records if not archived(record)
-                                and not external_draft(record)), key=importance), paths)
+    current = sorted((record for record in records if not archived(record)
+                      and not external_draft(record)), key=importance)
+    hits = path_matches(current, paths)
+    names = {}
+    for record in current if queries else ():
+        if record['status'] in HISTORICAL:
+            continue
+        searchable = (record['id'], record.get('section', ''), record.get('plan', {}).get('title', ''))
+        matched = [query for query in queries if any(query.casefold() in value.casefold()
+                   for value in searchable)]
+        if matched:
+            names[record['id']] = 'name: ' + ', '.join(matched)
     neighbors = connections(records)
-    queue = deque((rid, 0, 'explicit ID' if rid in ids else ', '.join(hits[rid]))
-                  for rid in dict.fromkeys([*ids, *hits]))
+    reasons = dict.fromkeys(ids, 'explicit ID')
+    for rid, matched_paths in hits.items():
+        reasons.setdefault(rid, ', '.join(matched_paths))
+    for rid, reason in names.items():
+        reasons.setdefault(rid, reason)
+    queue = deque((rid, 0, reason) for rid, reason in reasons.items())
     seen = {rid for rid, _, _ in queue}
     print('Context candidates (verify scope, current behavior, and evidence before use):')
     if not queue:
-        print('- no matches; locate project paths or supply a known record with --id')
+        print('- no matches; locate project paths or supply --id or --query')
     while queue:
         rid, distance, reason = queue.popleft()
         record = by_id[rid]
@@ -874,6 +935,8 @@ def main():
     context_cmd = subs.add_parser('context')
     context_cmd.add_argument('paths', nargs='*')
     context_cmd.add_argument('--id', action='append', default=[])
+    context_cmd.add_argument('--query', action='append', default=[],
+                             help='match part of a current record ID, Markdown section, or plan title')
     context_cmd.add_argument('--depth', type=int, default=2)
     args = parser.parse_args()
 
@@ -928,9 +991,10 @@ def main():
             elif not paths:
                 raise ValueError('Provide paths or --base')
             return impact(records, list(dict.fromkeys(paths)))
-        if args.depth < 0 or not (args.id or paths):
-            raise ValueError('Provide paths or --id and use a non-negative --depth')
-        return context(records, list(dict.fromkeys(paths)), args.id, args.depth)
+        queries = list(dict.fromkeys(query.strip() for query in args.query))
+        if '' in queries or args.depth < 0 or not (args.id or paths or queries):
+            raise ValueError('Provide paths, --id, or non-empty --query and use a non-negative --depth')
+        return context(records, list(dict.fromkeys(paths)), args.id, args.depth, queries)
     except (OSError, ValueError) as error:
         print('ERROR:', error, file=sys.stderr)
         return 2

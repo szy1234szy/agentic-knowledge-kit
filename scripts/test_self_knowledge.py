@@ -27,7 +27,9 @@ class SelfKnowledgeTest(unittest.TestCase):
             ('install.py', 'OPS-KIT-001'),
             ('scripts/knowledge.py', 'ARC-KIT-001'),
             ('.agents/skills/knowledge-sync/SKILL.md', 'GUIDE-KIT-001'),
+            ('.agents/skills/standards-intake/SKILL.md', 'GUIDE-KIT-STANDARDS'),
             ('.github/workflows/knowledge.yml', 'QUALITY-KIT-001'),
+            ('scripts/build_release.py', 'QUALITY-KIT-001'),
         ):
             with self.subTest(path=path):
                 self.assertIn(f'- {expected} [', self.cli('context', path, '--depth', '0'))

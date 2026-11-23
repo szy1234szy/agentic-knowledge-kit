@@ -9,8 +9,10 @@
 - 任务上下文模板：`docs/knowledge/templates/context-package.md`
 - 功能计划模板：`docs/knowledge/templates/feature-plan.md`
 - 技能目录：`.agents/skills/`
+- 若在套件源码仓库开发套件本身，从 `docs/README.md` 进入，运行知识命令时显式指定 `--registry docs/self/registry.json`。上面的通用索引随安装器交给目标项目使用。
 
 ## 阶段协议
+0. 首次建档、项目资料缺失或大版本后需要梳理资料时，使用 `project-bootstrap`。没有指定模式时按增量优化处理，先检查已有资料，再依据证据补齐缺口。
 1. 开发前：使用 `task-context`；无法识别关键安全或一致性约束时，不得自作主张实施高风险变更。
 2. 设计前：使用 `design-gate` 比对不变量、架构依赖和 ADR。需要跨阶段追踪的功能，用已有功能记录或功能计划模板保存范围、取舍与验收条件。设计与原有决策冲突时提出新决策，不直接覆盖旧记录。
 3. 开发中：小步修改、尽可能自动测试，不为了过 CI 而删除或弱化测试。

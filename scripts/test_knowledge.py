@@ -118,20 +118,25 @@ class KnowledgeRegistryTest(unittest.TestCase):
         self.assertNotIn('unrelated.txt', text)
 
     def test_review_all_finds_matching_markdown_in_distinct_files(self):
-        """全量复核能找到不同文件中的相同正文，默认审查无需读取正文。"""
+        """两种审查模式保持记录和正文不变，全量复核还能查找相同正文。"""
         guide = {'id': 'A', 'kind': 'guide', 'status': 'implemented', 'path': 'a.md',
                  'asset': {'importance': 'core'}}
         second = {**guide, 'id': 'B', 'path': 'b.md', 'asset': {}}
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / 'a.md').write_text('# Guide\n\nOne step.\n', encoding='utf-8')
-            (root / 'b.md').write_text('# Guide\nOne step.\n', encoding='utf-8')
+            files = {root / 'a.md': b'# Guide\n\nOne step.\n', root / 'b.md': b'# Guide\nOne step.\n'}
+            for path, content in files.items():
+                path.write_bytes(content)
+            records = [guide, second]
+            baseline = json.dumps(records, sort_keys=True)
             with patch('knowledge.ROOT', root):
                 for all_records in (False, True):
                     output = io.StringIO()
                     with redirect_stdout(output):
-                        review([guide, second], [], all_records)
+                        review(records, [], all_records)
                     self.assertEqual('matching Markdown text: A, B' in output.getvalue(), all_records)
+                    self.assertEqual(json.dumps(records, sort_keys=True), baseline)
+                    self.assertEqual({path: path.read_bytes() for path in files}, files)
 
     def test_review_kind_limits_selection_and_document_reads(self):
         """按类型复核普通记录，同时避免读取其他类型的 Markdown。"""
@@ -396,6 +401,61 @@ class KnowledgeRegistryTest(unittest.TestCase):
                 reasons = root / 'review.json'
                 reasons.write_text('{"DOC":"Public behavior verified by the existing contract test"}', encoding='utf-8')
                 self.assertEqual(sync_check([asset, other], index, baseline, 'review.json', strict=True), 0)
+
+    @unittest.skipUnless(shutil.which('git'), 'Git is required for checking Markdown sections')
+    def test_sync_check_reviews_shared_markdown_by_section(self):
+        """正文和围栏示例按登记章节核对，旧的文件级记录继续有效。"""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            doc = root / 'guide.md'
+            index = root / 'index.json'
+            asset = {'kind': 'feature', 'status': 'implemented', 'path': 'guide.md', 'scope': ['app.py']}
+            records = [{**asset, 'id': 'FIRST', 'section': 'First'},
+                       {**asset, 'id': 'SECOND', 'section': 'Second'},
+                       {**asset, 'id': 'WHOLE'}]
+            original = '# Guide\n\n## First\n\n~~~sh\n# Second\nold-command\n~~~\n\n## Second\n\nOriginal text\n'
+
+            def git(*args):
+                """为同步回归准备实际 Git 基线。"""
+                return subprocess.check_output(['git', '-C', str(root), *args],
+                                               stderr=subprocess.PIPE, text=True).strip()
+
+            git('init', '-q')
+            doc.write_text(original, encoding='utf-8')
+            (root / 'app.py').write_text('pass\n', encoding='utf-8')
+            index.write_text(json.dumps({'schema_version': 1, 'records': records}), encoding='utf-8')
+            git('add', '.')
+            git('-c', 'user.name=Kit Test', '-c', 'user.email=kit@example.test',
+                '-c', 'commit.gpgsign=false', 'commit', '-qm', 'initial')
+            baseline = git('rev-parse', 'HEAD')
+            (root / 'app.py').write_text('updated = True\n', encoding='utf-8')
+            doc.write_text(original.replace('old-command', 'new-command'), encoding='utf-8')
+            with patch('knowledge.ROOT', root), redirect_stdout(io.StringIO()) as output:
+                self.assertEqual(sync_check(records, index, baseline, strict=True), 1)
+                self.assertIn('- SECOND | review', output.getvalue())
+                self.assertNotIn('- FIRST | review', output.getvalue())
+                self.assertNotIn('- WHOLE | review', output.getvalue())
+                (root / 'review.json').write_text('{"SECOND":"Verified the contract remains valid"}', encoding='utf-8')
+                self.assertEqual(sync_check(records, index, baseline, 'review.json', strict=True), 0)
+                doc.write_text(original.replace('old-command', 'new-command').replace('Original text', 'New behavior'),
+                               encoding='utf-8')
+                self.assertEqual(sync_check(records, index, baseline, strict=True), 0)
+                doc.write_text(original.replace('## Second', '## Moved'), encoding='utf-8')
+                self.assertEqual(sync_check(records, index, baseline, strict=True), 1)
+
+    def test_context_searches_current_names_then_follows_relations(self):
+        """按当前名称找到跨模块证据并排除停用记录。"""
+        common = {'kind': 'feature', 'status': 'implemented', 'path': 'guide.md'}
+        records = [{**common, 'id': 'CAP-INBOX', 'section': 'RabbitMQ inbox',
+                    'relations': [{'type': 'verified_by', 'target': 'EVID-CONSUMER'}]},
+                   {**common, 'id': 'EVID-CONSUMER', 'kind': 'evidence'},
+                   {**common, 'id': 'OLD', 'status': 'deprecated', 'section': 'RabbitMQ previous'}]
+        with redirect_stdout(io.StringIO()) as output:
+            context(records, [], [], 1, ['rabbitmq'])
+        result = output.getvalue()
+        self.assertIn('name: rabbitmq', result)
+        self.assertIn('EVID-CONSUMER', result)
+        self.assertNotIn('- OLD ', result)
 
     def test_assets_review_protects_core_and_live_references(self):
         """将长期不用的低优先级资料列为候选，继续保护核心和仍需的资料。"""

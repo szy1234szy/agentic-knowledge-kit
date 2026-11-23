@@ -2,6 +2,167 @@
   "schema_version": 1,
   "records": [
     {
+      "id": "FEAT-KIT-BOOTSTRAP-MINIMUM",
+      "kind": "feature",
+      "status": "verified",
+      "path": "docs/self/backlog.md",
+      "section": "默认少生成，专题按需开启",
+      "plan": {
+        "title": "默认少生成，专题按需开启"
+      },
+      "scope": [
+        ".agents/skills/project-bootstrap/SKILL.md",
+        "docs/knowledge/asset-generation.md"
+      ],
+      "evidence": [
+        "file:docs/self/backlog.md",
+        "file:.agents/skills/project-bootstrap/SKILL.md"
+      ],
+      "relations": [
+        {
+          "type": "constrained_by",
+          "target": "INV-KIT-001"
+        },
+        {
+          "type": "related_to",
+          "target": "GUIDE-KIT-001"
+        }
+      ]
+    },
+    {
+      "id": "FEAT-KIT-BOOTSTRAP-PREFERENCES",
+      "kind": "feature",
+      "status": "verified",
+      "path": "docs/self/backlog.md",
+      "section": "项目保存生成偏好",
+      "plan": {
+        "title": "项目保存生成偏好"
+      },
+      "scope": [
+        ".agents/skills/project-bootstrap/SKILL.md",
+        "docs/knowledge/asset-generation.md"
+      ],
+      "evidence": [
+        "file:docs/self/backlog.md",
+        "file:.agents/skills/project-bootstrap/SKILL.md"
+      ],
+      "relations": [
+        {
+          "type": "depends_on",
+          "target": "FEAT-KIT-BOOTSTRAP-MINIMUM"
+        },
+        {
+          "type": "constrained_by",
+          "target": "INV-KIT-001"
+        }
+      ]
+    },
+    {
+      "id": "FEAT-KIT-MIDDLEWARE-IMPACT",
+      "kind": "feature",
+      "status": "verified",
+      "path": "docs/self/backlog.md",
+      "section": "按需分析中间件及故障影响",
+      "plan": {
+        "title": "按需分析中间件及故障影响"
+      },
+      "scope": [
+        ".agents/skills/project-bootstrap/SKILL.md",
+        ".agents/skills/knowledge-sync/SKILL.md",
+        "docs/knowledge/asset-generation.md"
+      ],
+      "evidence": [
+        "file:docs/self/backlog.md",
+        "file:.agents/skills/project-bootstrap/SKILL.md"
+      ],
+      "relations": [
+        {
+          "type": "depends_on",
+          "target": "FEAT-KIT-BOOTSTRAP-MINIMUM"
+        },
+        {
+          "type": "related_to",
+          "target": "FEAT-KIT-BOOTSTRAP-PREFERENCES"
+        },
+        {
+          "type": "decided_by",
+          "target": "ADR-KIT-002"
+        },
+        {
+          "type": "constrained_by",
+          "target": "INV-KIT-001"
+        }
+      ]
+    },
+    {
+      "id": "FEAT-KIT-ASSET-QUALITY-REPLAY",
+      "kind": "feature",
+      "status": "verified",
+      "path": "docs/self/backlog.md",
+      "section": "建立文档生成质量回归",
+      "plan": {
+        "title": "建立文档生成质量回归"
+      },
+      "scope": [
+        ".agents/skills/project-bootstrap/SKILL.md",
+        ".agents/skills/project-view/SKILL.md"
+      ],
+      "evidence": [
+        "file:docs/self/backlog.md"
+      ]
+    },
+    {
+      "id": "FEAT-KIT-CROSS-MODULE-CONTEXT",
+      "kind": "feature",
+      "status": "verified",
+      "path": "docs/self/backlog.md",
+      "section": "改善跨模块知识检索",
+      "plan": {
+        "title": "改善跨模块知识检索"
+      },
+      "scope": [
+        "scripts/knowledge.py",
+        ".agents/skills/task-context/SKILL.md"
+      ],
+      "evidence": [
+        "file:scripts/test_knowledge.py#KnowledgeRegistryTest.test_context_searches_current_names_then_follows_relations",
+        "file:docs/self/backlog.md"
+      ]
+    },
+    {
+      "id": "FEAT-KIT-SECTION-SYNC",
+      "kind": "feature",
+      "status": "verified",
+      "path": "docs/self/backlog.md",
+      "section": "按章节复核知识同步",
+      "plan": {
+        "title": "按章节复核知识同步"
+      },
+      "scope": [
+        "scripts/knowledge.py"
+      ],
+      "evidence": [
+        "file:scripts/test_knowledge.py#KnowledgeRegistryTest.test_sync_check_reviews_shared_markdown_by_section"
+      ]
+    },
+    {
+      "id": "FEAT-KIT-RELEASE-BASELINE",
+      "kind": "feature",
+      "status": "verified",
+      "path": "docs/self/backlog.md",
+      "section": "对齐发布版本与资料基线",
+      "plan": {
+        "title": "对齐发布版本与资料基线"
+      },
+      "scope": [
+        "scripts/build_release.py"
+      ],
+      "evidence": [
+        "file:scripts/build_release.py#main",
+        "file:docs/self/backlog.md"
+      ]
+    },
+    {
       "id": "ARC-KIT-001",
       "kind": "architecture",
       "status": "implemented",
@@ -13,7 +174,8 @@
       ],
       "asset": {
         "importance": "core",
-        "last_reviewed": "2026-11-22"
+        "last_reviewed": "2026-11-22",
+        "reviewed_commit": "97465b8878c92026884f8a83bdd5727070456100"
       },
       "evidence": [
         "file:install.py",
@@ -46,7 +208,8 @@
       ],
       "asset": {
         "importance": "core",
-        "last_reviewed": "2026-11-22"
+        "last_reviewed": "2026-11-22",
+        "reviewed_commit": "97465b8878c92026884f8a83bdd5727070456100"
       },
       "relations": [
         {
@@ -75,23 +238,23 @@
       "status": "accepted",
       "path": "docs/self/records/invariants.md",
       "scope": [
-        "install.py",
-        "scripts/knowledge.py"
+        "install.py"
       ],
       "asset": {
         "importance": "core",
-        "last_reviewed": "2026-11-22"
+        "last_reviewed": "2026-11-22",
+        "reviewed_commit": "97465b8878c92026884f8a83bdd5727070456100"
       },
       "evidence": [
-        "file:install.py#main",
-        "file:scripts/knowledge.py#review"
+        "file:install.py#main"
       ],
       "relations": [
         {
           "type": "verified_by",
           "target": "EVID-KIT-INSTALL-001"
         }
-      ]
+      ],
+      "section": "目标项目的知识边界"
     },
     {
       "id": "FEAT-KIT-REVIEW-SCOPE",
@@ -107,7 +270,7 @@
       "relations": [
         {
           "type": "constrained_by",
-          "target": "INV-KIT-001"
+          "target": "INV-KIT-REVIEW-READONLY"
         },
         {
           "type": "related_to",
@@ -130,7 +293,7 @@
       "relations": [
         {
           "type": "related_to",
-          "target": "INV-KIT-001"
+          "target": "INV-KIT-REVIEW-ISOLATION"
         },
         {
           "type": "verified_by",
@@ -161,7 +324,7 @@
       "relations": [
         {
           "type": "constrained_by",
-          "target": "INV-KIT-001"
+          "target": "INV-KIT-IMPACT-EVIDENCE"
         },
         {
           "type": "verified_by",
@@ -176,7 +339,8 @@
       "path": "docs/self/engineering-guide.md",
       "asset": {
         "importance": "core",
-        "last_reviewed": "2026-11-22"
+        "last_reviewed": "2026-11-22",
+        "reviewed_commit": "97465b8878c92026884f8a83bdd5727070456100"
       },
       "scope": [
         "install.py"
@@ -200,11 +364,14 @@
       "path": "docs/self/engineering-guide.md",
       "asset": {
         "importance": "core",
-        "last_reviewed": "2026-11-22"
+        "last_reviewed": "2026-11-22",
+        "reviewed_commit": "97465b8878c92026884f8a83bdd5727070456100"
       },
       "scope": [
         "AGENTS.md",
-        ".agents/skills/**"
+        ".agents/skills/**",
+        "docs/knowledge/asset-management.md",
+        "docs/knowledge/asset-generation.md"
       ],
       "relations": [
         {
@@ -212,7 +379,10 @@
           "target": "CAP-KIT-001"
         }
       ],
-      "section": "开发与知识同步"
+      "section": "开发与知识同步",
+      "evidence": [
+        "file:docs/knowledge/asset-generation.md"
+      ]
     },
     {
       "id": "QUALITY-KIT-001",
@@ -221,13 +391,19 @@
       "path": "docs/self/engineering-guide.md",
       "asset": {
         "importance": "core",
-        "last_reviewed": "2026-11-22"
+        "last_reviewed": "2026-11-22",
+        "reviewed_commit": "97465b8878c92026884f8a83bdd5727070456100"
       },
       "scope": [
         ".github/workflows/knowledge.yml",
-        "scripts/test_*.py"
+        "scripts/test_*.py",
+        "scripts/build_release.py"
       ],
-      "section": "校验与发布"
+      "section": "校验与发布",
+      "evidence": [
+        "file:scripts/build_release.py#main",
+        "file:.github/workflows/knowledge.yml"
+      ]
     },
     {
       "id": "EVID-KIT-ENCODING-001",
@@ -270,7 +446,8 @@
       ],
       "asset": {
         "importance": "core",
-        "last_reviewed": "2026-11-22"
+        "last_reviewed": "2026-11-22",
+        "reviewed_commit": "97465b8878c92026884f8a83bdd5727070456100"
       },
       "relations": [
         {
@@ -323,6 +500,89 @@
         "source": "AI 代码修改与复盘规范",
         "locator": "修改完成后的交付 / 验证结果；输出原则"
       }
+    },
+    {
+      "id": "GUIDE-KIT-STANDARDS",
+      "kind": "guide",
+      "status": "implemented",
+      "path": "docs/self/engineering-guide.md",
+      "section": "接入编程规范",
+      "scope": [
+        ".agents/skills/standards-intake/**",
+        "docs/knowledge/standards-intake.md"
+      ],
+      "asset": {
+        "importance": "core",
+        "last_reviewed": "2026-11-22"
+      },
+      "evidence": [
+        "file:.agents/skills/standards-intake/SKILL.md",
+        "file:scripts/test_knowledge.py#test_external_draft_requires_adoption_before_driving_context"
+      ],
+      "relations": [
+        {
+          "type": "related_to",
+          "target": "RULE-KIT-EXTERNAL-001"
+        }
+      ]
+    },
+    {
+      "kind": "invariant",
+      "status": "accepted",
+      "path": "docs/self/records/invariants.md",
+      "scope": [
+        "scripts/knowledge.py"
+      ],
+      "asset": {
+        "importance": "core",
+        "last_reviewed": "2026-11-23"
+      },
+      "id": "INV-KIT-REVIEW-READONLY",
+      "section": "审计保持只读",
+      "evidence": [
+        "file:scripts/knowledge.py#review",
+        "file:scripts/test_knowledge.py#test_review_all_finds_matching_markdown_in_distinct_files"
+      ]
+    },
+    {
+      "kind": "invariant",
+      "status": "accepted",
+      "path": "docs/self/records/invariants.md",
+      "scope": [
+        "scripts/knowledge.py"
+      ],
+      "asset": {
+        "importance": "core",
+        "last_reviewed": "2026-11-23"
+      },
+      "id": "INV-KIT-REVIEW-ISOLATION",
+      "section": "坏文档不影响其余查重结果",
+      "relations": [
+        {
+          "type": "verified_by",
+          "target": "EVID-KIT-ENCODING-001"
+        }
+      ]
+    },
+    {
+      "kind": "invariant",
+      "status": "accepted",
+      "path": "docs/self/records/invariants.md",
+      "scope": [
+        "scripts/knowledge.py"
+      ],
+      "asset": {
+        "importance": "core",
+        "last_reviewed": "2026-11-23"
+      },
+      "id": "INV-KIT-IMPACT-EVIDENCE",
+      "section": "从证据变更找当前使用方",
+      "relations": [
+        {
+          "type": "verified_by",
+          "target": "EVID-KIT-IMPACT-001"
+        }
+      ]
     }
   ]
 }

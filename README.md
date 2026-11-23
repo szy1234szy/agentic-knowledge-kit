@@ -1,14 +1,20 @@
 # Project-Grounded Agentic Engineering Kit (PGAE Kit)
 
-**v0.16** 面向现有代码库，提供工程资产管理、开发前知识检索、功能计划、变更同步、外部规范接入和故障学习。工具需要 Python 3.11 及以上版本。按 Git 基线检查影响或复核证据时还需要 Git。
+**v0.23** 面向现有代码库，提供工程资产生成与管理、开发前知识检索、功能计划、变更同步、外部规范接入和故障学习。工具需要 Python 3.11 及以上版本。按 Git 基线检查影响或复核证据时还需要 Git。
 
-刚接手或想看它实际怎么帮助开发，先读 [从这里开始](docs/README.md)。里面有一个可复现的案例和按任务选择的阅读入口。
+第一次拿去用，打开 [工程手册中的 Skill 使用指南](docs/self/engineering-guide.md#skill-使用指南)。里面有给老项目建档的可复制指令、各阶段的调用时机和交付检查。想先看本套件的实际案例，打开 [从这里开始](docs/README.md)。
+
+建档时从一项真实读者任务出发，先写验收问题，再追代码与测试证据，最后决定补章节、补链接或保留原状。[项目资产的生成与验收](docs/knowledge/asset-generation.md)
+
+向 `$project-bootstrap` 指定「只审查」「增量优化」或「指定重写」。默认原位增量优化，保留既有知识 ID 和有价值的人工内容。
+
+需要长期关注特定功能或专题时，可以为目标仓库保存 [建档偏好](docs/knowledge/asset-generation.md#保存项目的建档偏好)。本次明确指令优先，未设置偏好时沿用最小建档。
 
 ## 快速开始
 
 1. 在本套件目录运行 `python install.py /path/to/your-repo`。安装保留目标的已有文件。若目标已有 `AGENTS.md`，将本套件的知识入口和开发协议按需合入原文件。
 2. 在项目根目录运行 `python scripts/knowledge.py validate`。
-3. 用 Codex 执行 `$project-bootstrap`，仅分析仓库并提交初始知识草案，人工确认。
+3. 用 Coding Agent 打开目标项目，发送「用 `$project-bootstrap` 帮我生成这个项目的工程资料」。默认复用可信资料，有缺口时只完善一份项目说明。专题可在本次点名，或由项目偏好启用。
 4. 每次非简单开发，先运行 `$task-context`，再运行 `$design-gate`。
 5. 实施并验证代码后运行 `$knowledge-sync`。
 6. 故障或重复错误运行 `$incident-learning`；阶段性运行 `$knowledge-audit`。
@@ -42,7 +48,7 @@ python scripts/knowledge.py impact --base HEAD
 python scripts/knowledge.py impact src/orders/service.py tests/test_orders.py
 ```
 
-`context` 接受路径、重复的 `--id` 或两者组合，默认展开两层，可用 `--depth` 调整。检索遇到历史记录时会沿 `supersedes` 的反向关系找到替代它的决策。`impact --base` 比较指定提交与当前工作区的净变化，并纳入未忽略的未跟踪文件。`HEAD` 适用于改动尚未提交时，已经提交的任务应传开始时的提交。两条命令都能通过证据文件反查登记记录。候选结果需继续用实际调用链、契约和测试核实。
+`context` 接受路径、重复的 `--id` 和 `--query`。手上只有模块或业务名称时，可用 `context --query "登记名称" --depth 1`，匹配现行记录的 ID、Markdown 章节或计划标题。默认展开两层，可用 `--depth` 调整。检索遇到历史记录时会沿 `supersedes` 的反向关系找到替代它的决策。`impact --base` 比较指定提交与当前工作区的净变化，并纳入未忽略的未跟踪文件。`HEAD` 适用于改动尚未提交时，已经提交的任务应传开始时的提交。两条命令都能通过证据文件反查登记记录。候选结果需继续用实际调用链、契约和测试核实。
 
 知识文档删除或迁移后，查询仍会显示旧路径和相关记录，并把缺失文件列为警告。修复索引后运行 `validate`，完整性校验会拒绝仍指向缺失文件的记录。
 
@@ -56,7 +62,7 @@ python scripts/knowledge.py impact src/orders/service.py tests/test_orders.py
 
 运行 `python scripts/knowledge.py links` 检查知识目录中常见的 Markdown 相对链接、引用式定义与标题锚点。也可指定文件，例如 `links README.md docs/knowledge/README.md`。错误会标明来源文件和行号。网页、Obsidian 专用链接和自定义渲染器生成的锚点由相应工具复核。
 
-`sync-check --base <开始提交>` 会列出本次代码和测试变更命中的现行资料中，缺少文档更新、索引变更或复核说明的记录。默认提示，`--strict` 可作为门禁。对于已复核且无需更新的资料，可以传入本次新增或改动的 JSON，例如 `--review-file docs/review.json`，内容为 `{"FEAT-001":"输入输出保持一致，契约测试已通过"}`。新安装的 CI 在 PR 中运行提示版，升级保留原有工作流。
+`sync-check --base <开始提交>` 会列出本次代码和测试变更命中的现行资料中，缺少文档更新、索引变更或复核说明的记录。有 `section` 时只比较登记章节的文本。未登记章节时按文件判断。默认提示，`--strict` 可作为门禁。对于已复核且无需更新的资料，可以传入本次新增或改动的 JSON，例如 `--review-file docs/review.json`，内容为 `{"FEAT-001":"输入输出保持一致，契约测试已通过"}`。新安装的 CI 在 PR 中运行提示版，升级保留原有工作流。
 
 运行以下命令可直接体验示例索引，或阅读 [试点与故障回放](examples/README.md)。
 

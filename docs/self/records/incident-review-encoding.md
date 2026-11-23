@@ -10,4 +10,10 @@
 
 根因是正文读取的解码错误传播到命令顶层。修复把读取错误限制在单个文件，按路径警告一次并继续查重。当前版本对相同输入返回 0，报告跳过的文件并输出可读文档的重复候选。旧编码文档需要转换为 UTF-8 后再纳入正文查重。
 
-相关约束见 [INV-KIT-001](invariants.md)。命令和测试依据见 [实测记录](verification.md)。
+在套件根目录可复跑定向回归。通过时应报告一项测试成功。
+
+~~~powershell
+python -m unittest discover -s scripts -p 'test_knowledge.py' -k review_all_continues_after_unreadable_markdown
+~~~
+
+相关约束见 [坏文档的隔离边界](invariants.md#坏文档不影响其余查重结果)。完整测试依据见 [实测记录](verification.md)。
