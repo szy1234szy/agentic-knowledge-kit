@@ -163,6 +163,46 @@
       ]
     },
     {
+      "id": "FEAT-KIT-BOOTSTRAP-CONTRACT-CHECK",
+      "kind": "feature",
+      "status": "verified",
+      "path": "docs/self/backlog.md",
+      "section": "验收代表性流程的关键答案",
+      "plan": {"title": "验收代表性流程的关键答案"},
+      "scope": [".agents/skills/project-bootstrap/SKILL.md"],
+      "evidence": ["file:docs/self/backlog.md"]
+    },
+    {
+      "id": "FEAT-KIT-CONTEXT-BODY",
+      "kind": "feature",
+      "status": "verified",
+      "path": "docs/self/backlog.md",
+      "section": "从已登记正文补查依赖",
+      "plan": {"title": "从已登记正文补查依赖"},
+      "scope": ["scripts/knowledge.py"],
+      "evidence": ["file:scripts/test_knowledge.py#KnowledgeRegistryTest.test_context_body_fallback_stays_in_registered_current_sections"]
+    },
+    {
+      "id": "FEAT-KIT-EVIDENCE-REVIEW",
+      "kind": "feature",
+      "status": "verified",
+      "path": "docs/self/backlog.md",
+      "section": "要求关键资产给出逐条复核证据",
+      "plan": {"title": "要求关键资产给出逐条复核证据"},
+      "scope": ["scripts/knowledge.py"],
+      "evidence": ["file:scripts/test_knowledge.py#KnowledgeRegistryTest.test_git_registry_diff_and_sync_review"]
+    },
+    {
+      "id": "FEAT-KIT-UPGRADE-GUIDE",
+      "kind": "feature",
+      "status": "verified",
+      "path": "docs/self/backlog.md",
+      "section": "为升级项目交付新版使用入口",
+      "plan": {"title": "为升级项目交付新版使用入口"},
+      "scope": ["install.py", ".agents/skills/project-bootstrap/references/kit-usage.md"],
+      "evidence": ["file:scripts/test_install.py#InstallerTest.test_upgrade_refreshes_guide_without_replacing_project_docs"]
+    },
+    {
       "id": "ARC-KIT-001",
       "kind": "architecture",
       "status": "implemented",

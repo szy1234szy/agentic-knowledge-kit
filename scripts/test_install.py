@@ -50,3 +50,29 @@ class InstallerTest(unittest.TestCase):
             index = (target / 'docs/knowledge/registry.json').read_text(encoding='utf-8')
             self.assertEqual(json.loads(index), {'schema_version': 1, 'records': []})
             self.assertFalse((target / 'docs/self').exists())
+
+    def test_upgrade_refreshes_guide_without_replacing_project_docs(self):
+        """旧项目从升级输出找到指南，原资料、协议和流程保留。"""
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            originals = {}
+            for path in ('AGENTS.md', '.github/workflows/knowledge.yml', 'docs/knowledge/README.md',
+                         'docs/knowledge/asset-generation.md', 'docs/knowledge/registry.json'):
+                file = target / path
+                file.parent.mkdir(parents=True, exist_ok=True)
+                file.write_text(f'Existing project content: {path}', encoding='utf-8')
+                originals[file] = file.read_bytes()
+            guide = target / '.agents/skills/project-bootstrap/references/kit-usage.md'
+            preview = self.install(target, '--upgrade', '--dry-run')
+            self.assertEqual(preview.returncode, 0, preview.stderr)
+            self.assertFalse(guide.exists())
+            installed = self.install(target, '--upgrade')
+            self.assertEqual(installed.returncode, 0, installed.stderr)
+            self.assertIn(str(guide), installed.stdout)
+            self.assertIn('context --query', guide.read_text(encoding='utf-8'))
+            guide.write_text('Old toolkit guide', encoding='utf-8')
+            upgraded = self.install(target, '--upgrade')
+            self.assertEqual(upgraded.returncode, 0, upgraded.stderr)
+            self.assertEqual(guide.read_bytes(), (INSTALLER.parent / guide.relative_to(target)).read_bytes())
+            self.assertEqual({file: file.read_bytes() for file in originals}, originals)
+            self.assertIn('Copied=0', self.install(target, '--upgrade').stdout)

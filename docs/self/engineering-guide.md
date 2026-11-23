@@ -70,7 +70,7 @@ python scripts/knowledge.py links
 
 **怎样算成功。** 预览会输出 `Would copy=...` 和跳过数量。正式安装会输出 `Copied=...`。目标项目校验结果应有 `0 error(s)`，链接检查应有 `0 broken link(s)`。新建索引显示 `0 records` 属正常，已有索引按项目内容显示记录数。再执行目标项目相关测试，验证具体业务行为。
 
-**升级旧版。** 在新版套件目录用 `python .\install.py $target --upgrade --dry-run` 看计划，再用 `python .\install.py $target --upgrade` 执行，最后重复目标目录中的两项校验。升级替换套件脚本和 Skill，补齐缺失的模板。目标已有索引、项目说明、`AGENTS.md` 和 CI 由目标项目继续维护。若目标在 Git 中，检查这些文件的 Diff 并把安装改动放在独立提交，便于审阅及回退。
+**升级旧版。** 在新版套件目录用 `python .\install.py $target --upgrade --dry-run` 看计划，再用 `python .\install.py $target --upgrade` 执行，最后重复目标目录中的两项校验。升级替换套件脚本、Skill 和套件使用指南，补齐缺失的模板。输出 `Usage guide` 指出新版说明的位置。目标已有索引、项目说明、`AGENTS.md` 和 CI 由目标项目继续维护。若目标在 Git 中，检查这些文件的 Diff 并把安装改动放在独立提交，便于审阅及回退。[当前套件指南](../../.agents/skills/project-bootstrap/references/kit-usage.md)
 
 **遇到失败先看哪。** 若安装提示目标目录不存在、文件与目录冲突或路径越界，按报错中的路径核对，再重新运行预览。路径冲突在复制前检查。若安装成功但索引报错，到目标目录查看输出的记录 ID 和路径，核对该记录的文档、证据及范围后重跑校验。[安装脚本](../../install.py) · [安装测试](../../scripts/test_install.py) · [安装边界决策](records/adr-001.md)
 
@@ -97,12 +97,17 @@ python scripts/knowledge.py --registry docs/self/registry.json sync-check --base
 
 > 用项目知识套件处理这项改动。先找出已有实现和必须遵守的约束，列出验收办法。完成实现并跑测试后，按变更路径反查受影响的知识，更新对应章节并写入实际测试结果。
 
-有 Git 基线时可在 PR 中运行 `sync-check --base <开始提交>`。如经确认只调整内部实现，可提交本次修改的复核说明，从 JSON 记录 ID 和具体复核理由，再用 `--review-file` 供检查读取。该检查用于发现遗漏候选，事实是否准确由评审和实际测试确认。
+有 Git 基线时可在 PR 中运行 `sync-check --base <开始提交>`。普通记录允许用字符串记录本次理由。受影响的不变量和核心资产需要本次更新的结构化复核，按 ID 写明 `reason` 和 `evidence`，并将 JSON 路径传给 `--review-file`。工具核对证据引用，评审仍要核对文档事实。
 
 例如，从套件根目录复核安装变更时，可新建 `docs/review-this-task.json`，写下已核实的理由。请按实际检查结果填写。
 
 ~~~json
-{"OPS-KIT-001": "已复跑安装预检和升级，已有项目文档行为保持一致"}
+{
+  "OPS-KIT-001": {
+    "reason": "复跑旧项目升级，确认新版指南随工具更新，原有项目资料字节不变",
+    "evidence": ["file:scripts/test_install.py#InstallerTest.test_upgrade_refreshes_guide_without_replacing_project_docs"]
+  }
+}
 ~~~
 
 使用任务开始时保存的 `$base`，运行完整检查。仍有待复核记录时，严格模式会返回退出码 1。
@@ -142,7 +147,7 @@ python scripts/knowledge.py --registry docs/self/registry.json sync-check --base
 ## 校验与发布
 
 - 本地回归用 `python -m unittest discover -s scripts`，覆盖查询、索引、安装、锚点、归档、依赖和复核。
-- 正式发布用 `python scripts/build_release.py --ref v0.23`，或传入对应的 Git 提交。ZIP 的 `SOURCE-REVISION` 记录版本及完整提交哈希。脚本从该 Git 快照打包，并在解压副本上检查文档入口、索引、链接和测试。省略 `--ref` 时输出独立的 `-preview.zip`，用于验证工作区改动。
+- 正式发布用 `python scripts/build_release.py --ref v0.24`，或传入对应的 Git 提交。ZIP 的 `SOURCE-REVISION` 记录版本及完整提交哈希。脚本从该 Git 快照打包，并在解压副本上检查文档入口、索引、链接和测试。省略 `--ref` 时输出独立的 `-preview.zip`，用于验证工作区改动。
 - 在业务仓库运行结构校验后，继续执行项目测试和评审。网页内容和 Java 方法证据由维护者或项目工具核实。跨模块召回率及长期维护成本需要真实任务验证。
 - 新安装的 CI 检查知识目录的本地链接与常见标题锚点，在 PR 中提示需要复核的知识。升级后的仓库可将检查接入现有工作流。
 - 套件自用索引通过 `python scripts/knowledge.py --registry docs/self/registry.json validate --strict` 单独校验。共享 CI 默认检查目标项目的通用索引，本仓库还通过本地全量测试和发布验证复核自用资料。

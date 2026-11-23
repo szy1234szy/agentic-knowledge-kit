@@ -380,8 +380,11 @@ class KnowledgeRegistryTest(unittest.TestCase):
 
             git('init', '-q')
             save([asset, other])
-            (root / 'app.py').write_text('pass\n', encoding='utf-8')
-            (root / 'feature.md').write_text('# Feature\n', encoding='utf-8')
+            (root / 'app.py').write_text('threshold = 10\n', encoding='utf-8')
+            (root / 'feature.md').write_text('# Feature\n\nThreshold is 10.\n', encoding='utf-8')
+            reasons = root / 'review.json'
+            old_reason = {'reason': 'Checked the original limit', 'evidence': ['file:app.py#L1']}
+            reasons.write_text(json.dumps({'DOC': old_reason}), encoding='utf-8')
             git('add', '.')
             git('-c', 'user.name=Kit Test', '-c', 'user.email=kit@example.test',
                 '-c', 'commit.gpgsign=false', 'commit', '-qm', 'initial')
@@ -396,10 +399,22 @@ class KnowledgeRegistryTest(unittest.TestCase):
                 self.assertIn('registry changed for DOC: relations', output.getvalue())
 
                 save([asset, other])
-                (root / 'app.py').write_text('raise RuntimeError\n', encoding='utf-8')
+                (root / 'app.py').write_text('threshold = 20\n', encoding='utf-8')
+                (root / 'feature.md').write_text('# Feature\n\nThreshold is 10. Copy edited.\n', encoding='utf-8')
                 self.assertEqual(sync_check([asset, other], index, baseline, strict=True), 1)
-                reasons = root / 'review.json'
-                reasons.write_text('{"DOC":"Public behavior verified by the existing contract test"}', encoding='utf-8')
+                self.assertIn('DOC | evidence-backed review required', output.getvalue())
+                reasons.write_text(json.dumps({'DOC': old_reason, 'ADR': 'Reviewed outside the critical change'}),
+                                   encoding='utf-8')
+                self.assertEqual(sync_check([asset, other], index, baseline, 'review.json', strict=True), 1)
+                reasons.write_text('{"DOC":"Reviewed"}', encoding='utf-8')
+                self.assertEqual(sync_check([asset, other], index, baseline, 'review.json', strict=True), 1)
+                reasons.write_text('{"DOC":{"reason":"Checked threshold","evidence":["file:missing.py"]}}',
+                                   encoding='utf-8')
+                with self.assertRaisesRegex(ValueError, 'missing evidence file'):
+                    sync_check([asset, other], index, baseline, 'review.json', strict=True)
+                (root / 'feature.md').write_text('# Feature\n\nThreshold is 20.\n', encoding='utf-8')
+                reasons.write_text('{"DOC":{"reason":"Threshold now 20; updated the feature guide",'
+                                   '"evidence":["file:app.py#L1"]}}', encoding='utf-8')
                 self.assertEqual(sync_check([asset, other], index, baseline, 'review.json', strict=True), 0)
 
     @unittest.skipUnless(shutil.which('git'), 'Git is required for checking Markdown sections')
@@ -456,6 +471,30 @@ class KnowledgeRegistryTest(unittest.TestCase):
         self.assertIn('name: rabbitmq', result)
         self.assertIn('EVID-CONSUMER', result)
         self.assertNotIn('- OLD ', result)
+
+    def test_context_body_fallback_stays_in_registered_current_sections(self):
+        """正文补查只返回命中词的登记章节，并跳过归档和代码围栏。"""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            archive = root / 'docs/knowledge/archive'
+            archive.mkdir(parents=True)
+            (archive / 'retired.md').write_text('# Old\n\nRabbitMQ\n', encoding='utf-8')
+            (root / 'guide.md').write_text(
+                '## Preview\n\n~~~sh\nRabbitMQ\n~~~\n\n## Background jobs\n\nUses RabbitMQ.\n',
+                encoding='utf-8')
+            (root / 'unregistered.md').write_text('RabbitMQ\n', encoding='utf-8')
+            common = {'kind': 'capability', 'status': 'implemented', 'path': 'guide.md'}
+            records = [{**common, 'id': 'CAP-PREVIEW', 'section': 'Preview'},
+                       {**common, 'id': 'CAP-JOBS', 'section': 'Background jobs'},
+                       {**common, 'id': 'OLD', 'path': 'docs/knowledge/archive/retired.md'}]
+            with patch('knowledge.ROOT', root), redirect_stdout(io.StringIO()) as output:
+                context(records, [], [], 0, ['RabbitMQ'])
+            result = output.getvalue()
+            self.assertIn('CAP-JOBS', result)
+            self.assertIn('body: RabbitMQ', result)
+            self.assertNotIn('CAP-PREVIEW', result)
+            self.assertNotIn('- OLD ', result)
+            self.assertNotIn('unregistered.md', result)
 
     def test_assets_review_protects_core_and_live_references(self):
         """将长期不用的低优先级资料列为候选，继续保护核心和仍需的资料。"""

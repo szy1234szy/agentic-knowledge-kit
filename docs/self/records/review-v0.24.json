@@ -1,0 +1,53 @@
+{
+  "ARC-KIT-001": {
+    "reason": "复核建档、查询和同步仍使用现有 Markdown、索引与 Git 基线，新增正文补查和关键记录复核路径已写入项目说明。",
+    "evidence": ["file:docs/self/project-understanding.md", "file:scripts/knowledge.py#context", "file:scripts/knowledge.py#sync_check"]
+  },
+  "CAP-KIT-001": {
+    "reason": "核对用途边界和回归，名称无结果时只补查登记正文，普通记录保留原同步方式。",
+    "evidence": ["file:scripts/test_knowledge.py#KnowledgeRegistryTest.test_context_body_fallback_stays_in_registered_current_sections", "file:scripts/test_knowledge.py#KnowledgeRegistryTest.test_sync_check_reviews_shared_markdown_by_section"]
+  },
+  "ADR-KIT-001": {
+    "reason": "新版指南随套件安装和升级，项目记录仍归属目标项目。旧文档、索引、协议和 CI 的保留由升级回归验证。",
+    "evidence": ["file:scripts/test_install.py#InstallerTest.test_upgrade_refreshes_guide_without_replacing_project_docs"]
+  },
+  "INV-KIT-001": {
+    "reason": "新安装只提供通用索引，升级不覆盖已存在的项目索引和资料。",
+    "evidence": ["file:scripts/test_install.py#InstallerTest.test_install_keeps_target_index_independent_from_kit", "file:scripts/test_install.py#InstallerTest.test_upgrade_refreshes_guide_without_replacing_project_docs"]
+  },
+  "OPS-KIT-001": {
+    "reason": "核对升级输出新增的指南路径、预览不写入和重复升级跳过，手册已同步。",
+    "evidence": ["file:docs/self/engineering-guide.md", "file:scripts/test_install.py#InstallerTest.test_upgrade_refreshes_guide_without_replacing_project_docs"]
+  },
+  "QUALITY-KIT-001": {
+    "reason": "套件仍从 Git 快照构建并在解压副本运行回归，建档实测结果与工具测试分开记录。",
+    "evidence": ["file:scripts/build_release.py#main", "file:docs/self/backlog.md"]
+  },
+  "ADR-KIT-002": {
+    "reason": "复核查询继续以目标索引和显式关系为基础。正文补查仅用登记 Markdown 并标明命中来源。",
+    "evidence": ["file:scripts/knowledge.py#context_query_reasons", "file:scripts/test_knowledge.py#KnowledgeRegistryTest.test_context_body_fallback_stays_in_registered_current_sections"]
+  },
+  "GUIDE-KIT-STANDARDS": {
+    "reason": "外来规则仍须采纳后进入日常检索，本次正文补查沿用相同现行候选过滤。",
+    "evidence": ["file:scripts/knowledge.py#context", "file:scripts/test_knowledge.py#KnowledgeRegistryTest.test_external_draft_requires_adoption_before_driving_context"]
+  },
+  "INV-KIT-REVIEW-READONLY": {
+    "reason": "审计的原位只读保证没有随检索或同步变化，由正文查重回归确认。",
+    "evidence": ["file:scripts/test_knowledge.py#KnowledgeRegistryTest.test_review_all_finds_matching_markdown_in_distinct_files"]
+  },
+  "INV-KIT-REVIEW-ISOLATION": {
+    "reason": "坏编码文件不阻断其余正文查重，检索补查也按文件报告读取失败。",
+    "evidence": ["file:scripts/test_knowledge.py#KnowledgeRegistryTest.test_review_all_continues_after_unreadable_markdown", "file:scripts/knowledge.py#context_query_reasons"]
+  },
+  "INV-KIT-IMPACT-EVIDENCE": {
+    "reason": "直接证据变化仍会找回现行使用者，新增门禁只改变找到记录以后的复核条件。",
+    "evidence": ["file:scripts/test_knowledge.py#KnowledgeRegistryTest.test_impact_finds_current_assets_that_use_changed_evidence", "file:scripts/knowledge.py#sync_check"]
+  },
+  "FEAT-KIT-BOOTSTRAP-MINIMUM": "AgentOS 验收只在原 README 补一节，新增文件和索引均为零。",
+  "FEAT-KIT-BOOTSTRAP-PREFERENCES": "本次沿用按需专题与偏好优先级，通用建档复测只覆盖代表流程。",
+  "FEAT-KIT-MIDDLEWARE-IMPACT": "启用条件、双向索引与故障证据分层继续使用原流程，检索额外支持登记正文补查。",
+  "FEAT-KIT-CROSS-MODULE-CONTEXT": "名称命中仍优先，只对无名称结果的词补查正文。两条检索路径均通过回归。",
+  "FEAT-KIT-SECTION-SYNC": "普通记录仍能用实际章节变化或该 ID 的复核说明通过同步，两章节回归继续通过。",
+  "FEAT-KIT-REVIEW-SCOPE": "按类型复核继续由原回归覆盖，正文补查只用于任务上下文。",
+  "FEAT-KIT-IMPACT-EVIDENCE": "证据文件反查仍命中现行使用者，关联证据回归通过。"
+}

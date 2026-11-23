@@ -614,8 +614,37 @@ def linked_impact(records, current, hits):
                 yield record, f"linked plans to review via {', '.join(reasons)}"
 
 
+def sync_reviews(path, commit):
+    """读取本次确实新增或修改的逐条复核，并检查结构化证据地址。"""
+    source = (ROOT / path).read_text(encoding='utf-8-sig')
+    previous_body = git_file(commit, path)
+    previous = json.loads(previous_body.removeprefix('\ufeff')) if previous_body is not None else {}
+    entries = json.loads(source)
+    if not isinstance(entries, dict) or not isinstance(previous, dict):
+        raise ValueError('review file must map record IDs to review entries')
+    symbols = {}
+    reviewed = {}
+    for rid, entry in entries.items():
+        if rid in previous and entry == previous[rid]:
+            continue
+        if isinstance(entry, str) and entry.strip():
+            reviewed[rid] = False
+            continue
+        if not isinstance(entry, dict) or entry.keys() != {'reason', 'evidence'}:
+            raise ValueError(f'{rid}: review entry requires a reason and traceable evidence')
+        reason, evidence = entry['reason'], entry['evidence']
+        if (not isinstance(reason, str) or not reason.strip() or not isinstance(evidence, list) or not evidence
+                or not all(isinstance(ref, str) and traceable_evidence(ref) for ref in evidence)):
+            raise ValueError(f'{rid}: review entry requires a reason and traceable evidence')
+        for ref in evidence:
+            if ref.startswith('file:') and (issue := evidence_issue(ref, symbols)):
+                raise ValueError(f'{rid}: {issue}')
+        reviewed[rid] = True
+    return reviewed
+
+
 def sync_check(records, registry, base, review_file=None, strict=False):
-    """把代码变更命中的现行知识与新增更新或本次复核说明对应起来。"""
+    """检查变更命中的资产，并要求关键资产有本次复核及证据。"""
     commit = git_commit(base)
     paths = set(git_paths(commit))
     reviewed = {}
@@ -623,10 +652,7 @@ def sync_check(records, registry, base, review_file=None, strict=False):
         review_path = local_path(review_file)
         if not review_path or review_path not in paths or not existing_file(review_path):
             raise ValueError('review file must be a project file changed since the base')
-        reviewed = json.loads((ROOT / review_path).read_text(encoding='utf-8-sig'))
-        if (not isinstance(reviewed, dict) or not all(isinstance(reason, str) and reason.strip()
-                                                     for reason in reviewed.values())):
-            raise ValueError('review file must map record IDs to non-empty review reasons')
+        reviewed = sync_reviews(review_path, commit)
         paths.remove(review_path)
     # 作为证据的测试仍属于检查输入，修改普通 Markdown 只作为同步结果。
     inputs = sorted(path for path in paths if not path.lower().endswith('.md')
@@ -644,6 +670,13 @@ def sync_check(records, registry, base, review_file=None, strict=False):
     for record in current:
         rid = record['id']
         if record['kind'] in {'evidence', 'incident'} or (rid not in hits and rid not in related):
+            continue
+        critical = (record['status'] in {'accepted', 'implemented', 'verified'}
+                    and (record['kind'] == 'invariant' or importance(record) == 0))
+        if critical:
+            if not reviewed.get(rid):
+                pending.append(rid)
+                print(f'- {rid} | evidence-backed review required for {record_location(record)}')
             continue
         if rid in reviewed or rid in changed_records:
             continue
@@ -797,8 +830,48 @@ def review(records, ids, review_all=False, *, kind=None, registry=REG):
     return 0
 
 
+def context_query_reasons(records, queries):
+    """优先按名称查找，再从已登记的正文补查无名称结果的词。"""
+    current = [record for record in records if record['status'] not in HISTORICAL]
+    names = {}
+    unmatched = set(queries)
+    for record in current:
+        searchable = (record['id'], record.get('section', ''), record.get('plan', {}).get('title', ''))
+        matched = [query for query in queries if any(query.casefold() in value.casefold()
+                   for value in searchable)]
+        if matched:
+            names[record['id']] = 'name: ' + ', '.join(matched)
+            unmatched.difference_update(matched)
+    if not unmatched:
+        return names
+
+    documents = {}
+    for record in current:
+        path = local_path(record['path'])
+        if not path or not path.lower().endswith('.md'):
+            continue
+        if path not in documents:
+            documents[path] = [], {}
+            if existing_file(path):
+                try:
+                    body = (ROOT / path).read_text(encoding='utf-8-sig')
+                    documents[path] = body.splitlines(), markdown_sections(body)
+                except (OSError, UnicodeError) as error:
+                    print(f'WARN: cannot search Markdown body {path}: {error}', file=sys.stderr)
+        lines, sections = documents[path]
+        if section := record.get('section'):
+            lines = sections.get(section) or []
+        prose = '\n'.join(line for _, line in markdown_unfenced_lines(lines)).casefold()
+        matched = [query for query in queries if query in unmatched and query.casefold() in prose]
+        if matched:
+            rid = record['id']
+            reason = 'body: ' + ', '.join(matched)
+            names[rid] = f'{names[rid]}; {reason}' if rid in names else reason
+    return names
+
+
 def context(records, paths, ids, depth, queries=()):
-    """按路径、ID、名称选取候选，沿双向关系展开并保留发现依据。"""
+    """按路径、ID、名称和已登记正文选取候选，沿双向关系展开。"""
     by_id = {record['id']: record for record in records}
     unknown = [rid for rid in ids if rid not in by_id]
     if unknown:
@@ -807,21 +880,13 @@ def context(records, paths, ids, depth, queries=()):
     current = sorted((record for record in records if not archived(record)
                       and not external_draft(record)), key=importance)
     hits = path_matches(current, paths)
-    names = {}
-    for record in current if queries else ():
-        if record['status'] in HISTORICAL:
-            continue
-        searchable = (record['id'], record.get('section', ''), record.get('plan', {}).get('title', ''))
-        matched = [query for query in queries if any(query.casefold() in value.casefold()
-                   for value in searchable)]
-        if matched:
-            names[record['id']] = 'name: ' + ', '.join(matched)
     neighbors = connections(records)
     reasons = dict.fromkeys(ids, 'explicit ID')
     for rid, matched_paths in hits.items():
         reasons.setdefault(rid, ', '.join(matched_paths))
-    for rid, reason in names.items():
-        reasons.setdefault(rid, reason)
+    if queries:
+        for rid, reason in context_query_reasons(current, queries).items():
+            reasons.setdefault(rid, reason)
     queue = deque((rid, 0, reason) for rid, reason in reasons.items())
     seen = {rid for rid, _, _ in queue}
     print('Context candidates (verify scope, current behavior, and evidence before use):')
@@ -930,13 +995,13 @@ def main():
     impact_cmd.add_argument('--base', help='compare a Git commit with the working tree')
     sync_cmd = subs.add_parser('sync-check', help='flag code changes with missing knowledge review')
     sync_cmd.add_argument('--base', required=True, help='Git baseline commit')
-    sync_cmd.add_argument('--review-file', help='changed JSON file mapping reviewed IDs to reasons')
+    sync_cmd.add_argument('--review-file', help='changed JSON mapping reviewed IDs to reasons or reason/evidence objects')
     sync_cmd.add_argument('--strict', action='store_true', help='fail when affected records need review')
     context_cmd = subs.add_parser('context')
     context_cmd.add_argument('paths', nargs='*')
     context_cmd.add_argument('--id', action='append', default=[])
     context_cmd.add_argument('--query', action='append', default=[],
-                             help='match part of a current record ID, Markdown section, or plan title')
+                             help='match current names, then search registered Markdown content')
     context_cmd.add_argument('--depth', type=int, default=2)
     args = parser.parse_args()
 

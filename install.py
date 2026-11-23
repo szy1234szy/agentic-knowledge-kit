@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parent
 # 升级替换工具入口，缺失的资产模板和归档导航按需补齐。
 TOOLS = ('scripts/knowledge.py', 'scripts/test_knowledge.py')
 SKILLS = tuple(path.relative_to(ROOT) for path in sorted(ROOT.glob('.agents/skills/*/SKILL.md')))
+USAGE_GUIDE = Path('.agents/skills/project-bootstrap/references/kit-usage.md')
 ADDITIVE_ASSETS = {
     Path('docs/knowledge/archive/README.md'),
     Path('docs/knowledge/asset-management.md'),
@@ -36,7 +37,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('target', type=Path)
     mode = parser.add_mutually_exclusive_group()
-    mode.add_argument('--upgrade', action='store_true', help='replace kit scripts and skills, and add missing asset templates')
+    mode.add_argument('--upgrade', action='store_true',
+                      help='replace kit scripts, skills, and usage guide; add missing asset templates')
     mode.add_argument('--overwrite', action='store_true', help='replace all kit files including project knowledge')
     parser.add_argument('--dry-run', action='store_true', help='check destinations and show actions without writing')
     args = parser.parse_args()
@@ -46,7 +48,7 @@ def main():
     if not (target / '.git').exists():
         print('WARN: .git not found in target')
 
-    assets = [Path(path) for path in (*TOOLS, *SKILLS)]
+    assets = [Path(path) for path in (*TOOLS, *SKILLS, USAGE_GUIDE)]
     if args.upgrade:
         assets.extend(sorted(ADDITIVE_ASSETS))
     else:
@@ -81,6 +83,7 @@ def main():
     copied = sum(not skip for _, _, skip in actions)
     label = 'Would copy' if args.dry_run else 'Copied'
     print(f'{label}={copied}, skipped={len(actions) - copied}')
+    print(f'Usage guide: {target / USAGE_GUIDE}')
 
 
 if __name__ == '__main__':
