@@ -26,6 +26,8 @@
 
 想先看建议，指定「只审查」。想重整一处资料，指定「只重写某文件或某章节」。不指定时按「增量优化」执行。[三种模式的示例指令](#怎样选择文档维护方式)
 
+通用建档默认生成项目说明。点名功能契约或关键约束时，Agent 从同一次调查复用证据，按对应方法验收，并优先补到现有章节。[按用途生成三类常用资料](../knowledge/asset-generation.md#按用途生成三类常用资料)
+
 ### 给项目保存默认关注点
 
 在目标项目按需创建 `docs/knowledge/generation-preferences.md`，填写关注功能、专题深度和验收问题。比如 Demo 只填写主要演示流程，关键业务可以为指定功能开启「失败行为与恢复｜深入」。以后同一句建档指令会沿用这份偏好，本次说「只补项目概览」就会跳过偏好专题。旧项目升级后，偏好由项目维护者按需创建；新版 Skill 能直接读取。[可复制的偏好示例](../knowledge/asset-generation.md#保存项目的建档偏好)
@@ -147,7 +149,7 @@ python scripts/knowledge.py --registry docs/self/registry.json sync-check --base
 ## 校验与发布
 
 - 本地回归用 `python -m unittest discover -s scripts`，覆盖查询、索引、安装、锚点、归档、依赖和复核。
-- 正式发布用 `python scripts/build_release.py --ref v0.25`，或传入对应的 Git 提交。ZIP 的 `SOURCE-REVISION` 记录版本及完整提交哈希。脚本从该 Git 快照打包，并在解压副本上检查文档入口、索引、链接和测试。省略 `--ref` 时输出独立的 `-preview.zip`，用于验证工作区改动。
+- 正式发布用 `python scripts/build_release.py --ref v0.26`，或传入对应的 Git 提交。ZIP 的 `SOURCE-REVISION` 记录版本及完整提交哈希。脚本从该 Git 快照打包，并在解压副本上检查文档入口、索引、链接和测试。省略 `--ref` 时输出独立的 `-preview.zip`，用于验证工作区改动。
 - 在业务仓库运行结构校验后，继续执行项目测试和评审。网页内容和 Java 方法证据由维护者或项目工具核实。跨模块召回率及长期维护成本需要真实任务验证。
 - 新安装的 CI 检查知识目录的本地链接与常见标题锚点。PR 使用严格同步，有待复核时检查失败。升级保留已有工作流。要限制合并，在托管仓库的分支规则中设为必需检查。
 - 套件自用索引通过 `python scripts/knowledge.py --registry docs/self/registry.json validate --strict` 单独校验。共享 CI 默认检查目标项目的通用索引，本仓库还通过本地全量测试和发布验证复核自用资料。

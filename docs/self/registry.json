@@ -243,6 +243,16 @@
       "evidence": ["file:docs/self/backlog.md", "file:.github/workflows/knowledge.yml"]
     },
     {
+      "id": "FEAT-KIT-ASSET-RECIPES",
+      "kind": "feature",
+      "status": "verified",
+      "path": "docs/self/backlog.md",
+      "section": "按资料用途选择生成方法",
+      "plan": {"title": "按资料用途选择生成方法"},
+      "scope": [".agents/skills/project-bootstrap/SKILL.md", "docs/knowledge/asset-generation.md"],
+      "evidence": ["file:docs/self/backlog.md", "file:docs/knowledge/asset-generation.md"]
+    },
+    {
       "id": "ARC-KIT-001",
       "kind": "architecture",
       "status": "implemented",
