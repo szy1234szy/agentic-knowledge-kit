@@ -14,7 +14,7 @@
 python scripts/knowledge.py context --query "RabbitMQ" --depth 1
 ~~~
 
-查询先匹配已登记名称，找不到时补查现行登记章节的正文。找到候选后，用真实配置、调用路径和测试核对。已知功能 ID 或代码路径时可以直接搜索。
+查询同时返回登记名称和现行登记正文的匹配，名称优先。找到候选后，用真实配置、调用路径和测试核对。已知功能 ID 或代码路径时可以直接搜索。
 
 ## 改完后复核
 
@@ -23,7 +23,7 @@ python scripts/knowledge.py impact --base HEAD
 python scripts/knowledge.py sync-check --base HEAD --strict
 ~~~
 
-`HEAD` 适用于改动尚未提交。已经提交时用任务开始时的提交。受影响的现行不变量和标为核心的资产需要本次逐条复核。记录真实判断和可追溯证据，再把变更中的 JSON 传给 `--review-file`。例如，将下列 ID、原因、文件和测试名换成项目实测结果。
+`HEAD` 适用于改动尚未提交。已经提交时用任务开始时的提交。受影响的不变量和核心资产需要本次逐条复核。删除、归档或降级时，继续使用原 ID 说明原因并提供证据。新装项目的 PR 检查会读取本次变更中的 `docs/knowledge/review.json`，本地运行可用 `--review-file` 指定。示例中的 ID、原因和测试名需换成项目实测结果。
 
 ~~~json
 {
@@ -33,3 +33,5 @@ python scripts/knowledge.py sync-check --base HEAD --strict
   }
 }
 ~~~
+
+旧项目升级会保留现有工作流。需要启用新版 PR 检查时，从本套件的 `.github/workflows/knowledge.yml` 合入同步步骤，并在仓库分支规则中设为必需检查。

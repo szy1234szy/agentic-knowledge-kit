@@ -203,6 +203,46 @@
       "evidence": ["file:scripts/test_install.py#InstallerTest.test_upgrade_refreshes_guide_without_replacing_project_docs"]
     },
     {
+      "id": "FEAT-KIT-PROTECTED-BASELINE",
+      "kind": "feature",
+      "status": "verified",
+      "path": "docs/self/backlog.md",
+      "section": "从基线追踪退出保护的关键记录",
+      "plan": {"title": "从基线追踪退出保护的关键记录"},
+      "scope": ["scripts/knowledge.py"],
+      "evidence": ["file:scripts/test_knowledge.py#KnowledgeRegistryTest.test_sync_check_detects_withdrawn_protection_from_git_baseline"]
+    },
+    {
+      "id": "FEAT-KIT-CONTEXT-MIXED",
+      "kind": "feature",
+      "status": "verified",
+      "path": "docs/self/backlog.md",
+      "section": "合并名称和正文查询结果",
+      "plan": {"title": "合并名称和正文查询结果"},
+      "scope": ["scripts/knowledge.py"],
+      "evidence": ["file:scripts/test_knowledge.py#KnowledgeRegistryTest.test_context_body_fallback_stays_in_registered_current_sections"]
+    },
+    {
+      "id": "FEAT-KIT-INDEPENDENT-BOOTSTRAP",
+      "kind": "feature",
+      "status": "verified",
+      "path": "docs/self/backlog.md",
+      "section": "复测独立会话自动建档",
+      "plan": {"title": "复测独立会话自动建档"},
+      "scope": [".agents/skills/project-bootstrap/SKILL.md"],
+      "evidence": ["file:docs/self/backlog.md"]
+    },
+    {
+      "id": "FEAT-KIT-STRICT-PR",
+      "kind": "feature",
+      "status": "verified",
+      "path": "docs/self/backlog.md",
+      "section": "默认启用 PR 严格同步检查",
+      "plan": {"title": "默认启用 PR 严格同步检查"},
+      "scope": [".github/workflows/knowledge.yml"],
+      "evidence": ["file:docs/self/backlog.md", "file:.github/workflows/knowledge.yml"]
+    },
+    {
       "id": "ARC-KIT-001",
       "kind": "architecture",
       "status": "implemented",

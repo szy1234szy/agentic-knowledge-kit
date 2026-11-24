@@ -1,0 +1,41 @@
+{
+  "ARC-KIT-001": {
+    "reason": "复核查询应继续依赖登记知识和实际证据，Git 基线用于检查关键资产退出保护。项目说明已同步。",
+    "evidence": ["file:docs/self/project-understanding.md", "file:scripts/knowledge.py#context_query_reasons", "file:scripts/knowledge.py#sync_check"]
+  },
+  "CAP-KIT-001": {
+    "reason": "核对名称与正文并存、关键资产删除和降级回归。结论仍以显式登记的资产为检索范围。",
+    "evidence": ["file:scripts/test_knowledge.py#KnowledgeRegistryTest.test_context_body_fallback_stays_in_registered_current_sections", "file:scripts/test_knowledge.py#KnowledgeRegistryTest.test_sync_check_detects_withdrawn_protection_from_git_baseline"]
+  },
+  "QUALITY-KIT-001": {
+    "reason": "新装工作流从提示改为严格检查。临时项目实跑安装后的 Bash 步骤，退出码依次为 0、1、0。",
+    "evidence": ["file:.github/workflows/knowledge.yml", "file:docs/self/backlog.md"]
+  },
+  "ADR-KIT-002": {
+    "reason": "查询依然从本地索引展开到明确关系，新增正文匹配限于登记路径和章节。按 Git 基线核对退出保护的资产。",
+    "evidence": ["file:scripts/knowledge.py#context_query_reasons", "file:scripts/knowledge.py#registry_baseline"]
+  },
+  "GUIDE-KIT-STANDARDS": {
+    "reason": "名称和正文合并查询沿用同一个现行记录过滤，未采纳的外部规则不会进入普通检索。",
+    "evidence": ["file:scripts/knowledge.py#context", "file:scripts/test_knowledge.py#KnowledgeRegistryTest.test_external_draft_requires_adoption_before_driving_context"]
+  },
+  "INV-KIT-REVIEW-READONLY": {
+    "reason": "正文匹配和 Git 基线比较仅读取文件。复跑只读查重回归确认审计未修改项目记录。",
+    "evidence": ["file:scripts/test_knowledge.py#KnowledgeRegistryTest.test_review_all_finds_matching_markdown_in_distinct_files"]
+  },
+  "INV-KIT-REVIEW-ISOLATION": {
+    "reason": "查重仍按文件处理坏编码，查询的正文读取仍单独捕获不可读文档。",
+    "evidence": ["file:scripts/test_knowledge.py#KnowledgeRegistryTest.test_review_all_continues_after_unreadable_markdown", "file:scripts/knowledge.py#context_query_reasons"]
+  },
+  "INV-KIT-IMPACT-EVIDENCE": {
+    "reason": "校验证据回查仍找到现行使用方。Git 基线追加的旧作用范围用于同步保护，不改变原有影响查询的关系。",
+    "evidence": ["file:scripts/test_knowledge.py#KnowledgeRegistryTest.test_impact_finds_current_assets_that_use_changed_evidence", "file:scripts/knowledge.py#sync_check"]
+  },
+  "FEAT-KIT-MIDDLEWARE-IMPACT": "保留按需启用、双向影响和故障证据分层。RabbitMQ 的运维和作业章节现在能在同次查询中出现。",
+  "FEAT-KIT-CROSS-MODULE-CONTEXT": "原有名称及关系检索回归通过，正文候选会在名称结果之后补充。",
+  "FEAT-KIT-SECTION-SYNC": "仍使用现有章节比较和普通记录复核。补做基线中关键记录退出保护的回归。",
+  "FEAT-KIT-CONTEXT-BODY": "更新回归覆盖名称及正文并存、顺序与去重，以及归档和围栏过滤。",
+  "FEAT-KIT-EVIDENCE-REVIEW": "证据复核扩展为识别基线关键记录删除、归档、降级和旧作用范围。",
+  "FEAT-KIT-REVIEW-SCOPE": "按资产类型限制读取范围的原回归通过，正文查找仅改变任务上下文。",
+  "FEAT-KIT-IMPACT-EVIDENCE": "直接证据与关系使用方同时可见的原回归继续通过。"
+}

@@ -1,6 +1,6 @@
 # Project-Grounded Agentic Engineering Kit (PGAE Kit)
 
-**v0.24** 面向现有代码库，提供工程资产生成与管理、开发前知识检索、功能计划、变更同步、外部规范接入和故障学习。工具需要 Python 3.11 及以上版本。按 Git 基线检查影响或复核证据时还需要 Git。
+**v0.25** 面向现有代码库，提供工程资产生成与管理、开发前知识检索、功能计划、变更同步、外部规范接入和故障学习。工具需要 Python 3.11 及以上版本。按 Git 基线检查影响或复核证据时还需要 Git。
 
 第一次拿去用，打开 [工程手册中的 Skill 使用指南](docs/self/engineering-guide.md#skill-使用指南)。里面有给老项目建档的可复制指令、各阶段的调用时机和交付检查。想先看本套件的实际案例，打开 [从这里开始](docs/README.md)。
 
@@ -48,7 +48,7 @@ python scripts/knowledge.py impact --base HEAD
 python scripts/knowledge.py impact src/orders/service.py tests/test_orders.py
 ```
 
-`context` 接受路径、重复的 `--id` 和 `--query`。手上只有模块或业务名称时，可用 `context --query "RabbitMQ" --depth 1`。优先匹配现行记录的 ID、章节或计划标题。该词找不到名称结果时，补查现行登记章节的正文。默认展开两层，可用 `--depth` 调整。检索遇到历史记录时会沿 `supersedes` 的反向关系找到替代它的决策。`impact --base` 比较指定提交与当前工作区的净变化，并纳入未忽略的未跟踪文件。`HEAD` 适用于改动尚未提交时，已经提交的任务应传开始时的提交。候选结果需继续用实际调用链、契约和测试核实。
+`context` 接受路径、重复的 `--id` 和 `--query`。手上只有模块或业务名称时，可用 `context --query "RabbitMQ" --depth 1`。结果先列现行记录的 ID、章节或计划标题命中，再补充其他已登记正文的命中。默认展开两层，可用 `--depth` 调整。检索遇到历史记录时会沿 `supersedes` 的反向关系找到替代它的决策。`impact --base` 比较指定提交与当前工作区的净变化，并纳入未忽略的未跟踪文件。`HEAD` 适用于改动尚未提交时，已经提交的任务应传开始时的提交。候选结果需继续用实际调用链、契约和测试核实。
 
 知识文档删除或迁移后，查询仍会显示旧路径和相关记录，并把缺失文件列为警告。修复索引后运行 `validate`，完整性校验会拒绝仍指向缺失文件的记录。
 
@@ -62,7 +62,7 @@ python scripts/knowledge.py impact src/orders/service.py tests/test_orders.py
 
 运行 `python scripts/knowledge.py links` 检查知识目录中常见的 Markdown 相对链接、引用式定义与标题锚点。也可指定文件，例如 `links README.md docs/knowledge/README.md`。错误会标明来源文件和行号。网页、Obsidian 专用链接和自定义渲染器生成的锚点由相应工具复核。
 
-`sync-check --base <开始提交>` 提示受影响的资料。普通记录按登记章节检查更新，未登记章节时按文件检查，也可为记录附复核理由。现行不变量和核心资产都要求使用 `--review-file` 提供本次逐 ID 更新的 `reason` 和 `evidence`。默认提示，`--strict` 在有待复核记录时退出失败。新安装的 CI 在 PR 中运行提示版，升级保留现有工作流。[复核格式与实例](.agents/skills/project-bootstrap/references/kit-usage.md#改完后复核)
+`sync-check --base <开始提交>` 提示受影响的资料。普通记录按登记章节或文件检查。受影响的现行不变量和核心资产都要求本次逐 ID 更新的 `reason` 和 `evidence`。删除、归档或降级时仍按基线中的原 ID 提供复核。新安装的 PR 工作流使用 `--strict`，读取本次修改的 `docs/knowledge/review.json`；升级保留已有工作流。[复核格式与实例](.agents/skills/project-bootstrap/references/kit-usage.md#改完后复核)
 
 运行以下命令可直接体验示例索引，或阅读 [试点与故障回放](examples/README.md)。
 

@@ -16,8 +16,15 @@ jobs:
       - run: python scripts/knowledge.py validate --strict
       - run: python scripts/knowledge.py links
       - run: python -m unittest discover -s scripts -p 'test_knowledge.py'
-      - name: Report knowledge review candidates
+      - name: Require knowledge review for pull requests
         if: github.event_name == 'pull_request'
         env:
           KNOWLEDGE_BASE: ${{ github.event.pull_request.base.sha }}
-        run: python scripts/knowledge.py sync-check --base "$KNOWLEDGE_BASE"
+        shell: bash
+        run: |
+          review_path=docs/knowledge/review.json
+          review_args=()
+          if [[ -f "$review_path" ]] && [[ -n "$(git diff --name-only "$KNOWLEDGE_BASE" -- "$review_path")" ]]; then
+            review_args=(--review-file "$review_path")
+          fi
+          python scripts/knowledge.py sync-check --base "$KNOWLEDGE_BASE" --strict "${review_args[@]}"

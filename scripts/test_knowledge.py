@@ -458,6 +458,52 @@ class KnowledgeRegistryTest(unittest.TestCase):
                 doc.write_text(original.replace('## Second', '## Moved'), encoding='utf-8')
                 self.assertEqual(sync_check(records, index, baseline, strict=True), 1)
 
+    @unittest.skipUnless(shutil.which('git'), 'Git is required for comparing protected records')
+    def test_sync_check_detects_withdrawn_protection_from_git_baseline(self):
+        """基线中的关键记录删除、归档或降级时，仍需按旧 ID 复核。"""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            index = root / 'index.json'
+            critical = {'id': 'LIMIT', 'kind': 'capability', 'status': 'implemented',
+                        'path': 'guide.md', 'scope': ['app.py'], 'asset': {'importance': 'core'}}
+
+            def git(*args):
+                """创建和读取测试 Git 基线。"""
+                return subprocess.check_output(['git', '-C', str(root), *args],
+                                               stderr=subprocess.PIPE, text=True).strip()
+
+            def save(records):
+                """把当前变体保存到测试索引。"""
+                index.write_text(json.dumps({'schema_version': 1, 'records': records}), encoding='utf-8')
+
+            git('init', '-q')
+            save([critical])
+            (root / 'app.py').write_text('threshold = 10\n', encoding='utf-8')
+            (root / 'guide.md').write_text('# Limit\n', encoding='utf-8')
+            git('add', '.')
+            git('-c', 'user.name=Kit Test', '-c', 'user.email=kit@example.test',
+                '-c', 'commit.gpgsign=false', 'commit', '-qm', 'initial')
+            baseline = git('rev-parse', 'HEAD')
+            with patch('knowledge.ROOT', root), redirect_stdout(io.StringIO()) as output:
+                variants = [[], [{**critical, 'status': 'proposed'}],
+                            [{**critical, 'asset': {'importance': 'standard'}}],
+                            [{**critical, 'path': 'docs/knowledge/archive/guide.md'}]]
+                for records in variants:
+                    with self.subTest(records=records):
+                        save(records)
+                        self.assertEqual(sync_check(records, index, baseline, strict=True), 1)
+                self.assertIn('LIMIT | evidence-backed review required after removal or downgrade', output.getvalue())
+
+                (root / 'app.py').write_text('threshold = 20\n', encoding='utf-8')
+                moved_scope = [{**critical, 'scope': ['other.py']}]
+                save(moved_scope)
+                self.assertEqual(sync_check(moved_scope, index, baseline, strict=True), 1)
+                save([])
+                (root / 'review.json').write_text(
+                    '{"LIMIT":{"reason":"Threshold migrated into the new contract","evidence":["file:app.py#L1"]}}',
+                    encoding='utf-8')
+                self.assertEqual(sync_check([], index, baseline, 'review.json', strict=True), 0)
+
     def test_context_searches_current_names_then_follows_relations(self):
         """按当前名称找到跨模块证据并排除停用记录。"""
         common = {'kind': 'feature', 'status': 'implemented', 'path': 'guide.md'}
@@ -473,24 +519,27 @@ class KnowledgeRegistryTest(unittest.TestCase):
         self.assertNotIn('- OLD ', result)
 
     def test_context_body_fallback_stays_in_registered_current_sections(self):
-        """正文补查只返回命中词的登记章节，并跳过归档和代码围栏。"""
+        """名称和已登记正文同时命中，名称优先，归档和代码围栏不参与。"""
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
             archive = root / 'docs/knowledge/archive'
             archive.mkdir(parents=True)
             (archive / 'retired.md').write_text('# Old\n\nRabbitMQ\n', encoding='utf-8')
             (root / 'guide.md').write_text(
-                '## Preview\n\n~~~sh\nRabbitMQ\n~~~\n\n## Background jobs\n\nUses RabbitMQ.\n',
+                '## Preview\n\n~~~sh\nRabbitMQ\n~~~\n\n## Background jobs\n\nUses RabbitMQ.\n'
+                '\n## RabbitMQ maintenance\n\nMonitor RabbitMQ.\n',
                 encoding='utf-8')
             (root / 'unregistered.md').write_text('RabbitMQ\n', encoding='utf-8')
             common = {'kind': 'capability', 'status': 'implemented', 'path': 'guide.md'}
             records = [{**common, 'id': 'CAP-PREVIEW', 'section': 'Preview'},
                        {**common, 'id': 'CAP-JOBS', 'section': 'Background jobs'},
+                       {**common, 'id': 'CAP-OPS', 'section': 'RabbitMQ maintenance'},
                        {**common, 'id': 'OLD', 'path': 'docs/knowledge/archive/retired.md'}]
             with patch('knowledge.ROOT', root), redirect_stdout(io.StringIO()) as output:
                 context(records, [], [], 0, ['RabbitMQ'])
             result = output.getvalue()
-            self.assertIn('CAP-JOBS', result)
+            self.assertLess(result.index('CAP-OPS'), result.index('CAP-JOBS'))
+            self.assertEqual(result.count('CAP-OPS'), 1)
             self.assertIn('body: RabbitMQ', result)
             self.assertNotIn('CAP-PREVIEW', result)
             self.assertNotIn('- OLD ', result)

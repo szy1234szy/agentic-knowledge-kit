@@ -555,18 +555,24 @@ def git_file(commit, path):
     return git_output('show', f'{commit}:{repo_path}') if present else None
 
 
-def registry_changes(records, registry, base, paths):
-    """按 ID 对比基线中的有效内容，忽略核实时间等维护元数据。"""
+def registry_baseline(registry, commit, paths):
+    """索引变化时读取 Git 基线，保留已删除记录。"""
     if not registry.resolve().is_relative_to(ROOT):
-        return {}
+        return None
     path = registry.resolve().relative_to(ROOT).as_posix()
     if path not in paths:
-        return {}
-    previous_body = git_file(git_commit(base), path)
+        return None
+    previous_body = git_file(commit, path)
     previous_records = parse_registry(previous_body) if previous_body is not None else []
     if any(not isinstance(record, dict) or not isinstance(record.get('id'), str) for record in previous_records):
         raise ValueError('baseline registry contains invalid record IDs')
-    previous = {record['id']: record for record in previous_records}
+    return {record['id']: record for record in previous_records}
+
+
+def registry_delta(records, previous):
+    """按 ID 对比仍在当前索引中的有效字段。"""
+    if previous is None:
+        return {}
     fields = ('kind', 'status', 'path', 'section', 'scope', 'evidence', 'relations', 'plan', 'origin')
     changes = {}
     for record in records:
@@ -576,6 +582,11 @@ def registry_changes(records, registry, base, paths):
         elif difference := [field for field in fields if record.get(field) != previous[rid].get(field)]:
             changes[rid] = difference
     return changes
+
+
+def registry_changes(records, registry, base, paths):
+    """按 ID 对比基线中的有效内容，忽略核实时间等维护元数据。"""
+    return registry_delta(records, registry_baseline(registry, git_commit(base), paths))
 
 
 def impact(records, paths):
@@ -643,6 +654,14 @@ def sync_reviews(path, commit):
     return reviewed
 
 
+def protected_record(record):
+    """判断记录是否属于需要证据复核的现行资产。"""
+    return (record['status'] in {'accepted', 'implemented', 'verified'}
+            and record['kind'] not in {'evidence', 'incident'}
+            and not archived(record) and not external_draft(record)
+            and (record['kind'] == 'invariant' or importance(record) == 0))
+
+
 def sync_check(records, registry, base, review_file=None, strict=False):
     """检查变更命中的资产，并要求关键资产有本次复核及证据。"""
     commit = git_commit(base)
@@ -664,16 +683,27 @@ def sync_check(records, registry, base, review_file=None, strict=False):
                and not external_draft(record)]
     hits = path_matches(current, inputs)
     related = {record['id'] for record, _ in linked_impact(records, current, hits)} if hits else set()
-    changed_records = registry_changes(records, registry, commit, paths)
+    baseline = registry_baseline(registry, commit, paths)
+    changed_records = registry_delta(records, baseline)
+    previous_protected = {rid: record for rid, record in (baseline or {}).items()
+                          if protected_record(record)}
+    current_protected = {record['id'] for record in current if protected_record(record)}
+    withdrawn = previous_protected.keys() - current_protected
+    former_hits = path_matches(previous_protected.values(), inputs)
     sections_by_path = {}
     pending = []
+    for rid in sorted(withdrawn):
+        if not reviewed.get(rid):
+            pending.append(rid)
+            print(f'- {rid} | evidence-backed review required after removal or downgrade of protected '
+                  f'{record_location(previous_protected[rid])}')
     for record in current:
         rid = record['id']
-        if record['kind'] in {'evidence', 'incident'} or (rid not in hits and rid not in related):
+        if rid in withdrawn or record['kind'] in {'evidence', 'incident'}:
             continue
-        critical = (record['status'] in {'accepted', 'implemented', 'verified'}
-                    and (record['kind'] == 'invariant' or importance(record) == 0))
-        if critical:
+        if rid not in hits and rid not in related and rid not in former_hits:
+            continue
+        if rid in current_protected:
             if not reviewed.get(rid):
                 pending.append(rid)
                 print(f'- {rid} | evidence-backed review required for {record_location(record)}')
@@ -831,22 +861,21 @@ def review(records, ids, review_all=False, *, kind=None, registry=REG):
 
 
 def context_query_reasons(records, queries):
-    """优先按名称查找，再从已登记的正文补查无名称结果的词。"""
+    """先列名称命中，再补充其他已登记正文的命中。"""
     current = [record for record in records if record['status'] not in HISTORICAL]
     names = {}
-    unmatched = set(queries)
     for record in current:
         searchable = (record['id'], record.get('section', ''), record.get('plan', {}).get('title', ''))
         matched = [query for query in queries if any(query.casefold() in value.casefold()
                    for value in searchable)]
         if matched:
             names[record['id']] = 'name: ' + ', '.join(matched)
-            unmatched.difference_update(matched)
-    if not unmatched:
-        return names
 
     documents = {}
     for record in current:
+        rid = record['id']
+        if rid in names:
+            continue
         path = local_path(record['path'])
         if not path or not path.lower().endswith('.md'):
             continue
@@ -862,11 +891,9 @@ def context_query_reasons(records, queries):
         if section := record.get('section'):
             lines = sections.get(section) or []
         prose = '\n'.join(line for _, line in markdown_unfenced_lines(lines)).casefold()
-        matched = [query for query in queries if query in unmatched and query.casefold() in prose]
+        matched = [query for query in queries if query.casefold() in prose]
         if matched:
-            rid = record['id']
-            reason = 'body: ' + ', '.join(matched)
-            names[rid] = f'{names[rid]}; {reason}' if rid in names else reason
+            names[rid] = 'body: ' + ', '.join(matched)
     return names
 
 
@@ -1001,7 +1028,7 @@ def main():
     context_cmd.add_argument('paths', nargs='*')
     context_cmd.add_argument('--id', action='append', default=[])
     context_cmd.add_argument('--query', action='append', default=[],
-                             help='match current names, then search registered Markdown content')
+                             help='match current names and registered Markdown content, with names first')
     context_cmd.add_argument('--depth', type=int, default=2)
     args = parser.parse_args()
 

@@ -97,7 +97,7 @@ python scripts/knowledge.py --registry docs/self/registry.json sync-check --base
 
 > 用项目知识套件处理这项改动。先找出已有实现和必须遵守的约束，列出验收办法。完成实现并跑测试后，按变更路径反查受影响的知识，更新对应章节并写入实际测试结果。
 
-有 Git 基线时可在 PR 中运行 `sync-check --base <开始提交>`。普通记录允许用字符串记录本次理由。受影响的不变量和核心资产需要本次更新的结构化复核，按 ID 写明 `reason` 和 `evidence`，并将 JSON 路径传给 `--review-file`。工具核对证据引用，评审仍要核对文档事实。
+有 Git 基线时可在 PR 中运行 `sync-check --base <开始提交>`。普通记录允许用字符串记录本次理由。受影响的不变量和核心资产需要本次更新的结构化复核，按 ID 写明 `reason` 和 `evidence`。删除、归档或降级时仍按原 ID 复核。新装项目的 PR 工作流读取本次改动的 `docs/knowledge/review.json`，本地可用 `--review-file` 指定。工具核对证据引用，评审仍要核对文档事实。
 
 例如，从套件根目录复核安装变更时，可新建 `docs/review-this-task.json`，写下已核实的理由。请按实际检查结果填写。
 
@@ -147,9 +147,9 @@ python scripts/knowledge.py --registry docs/self/registry.json sync-check --base
 ## 校验与发布
 
 - 本地回归用 `python -m unittest discover -s scripts`，覆盖查询、索引、安装、锚点、归档、依赖和复核。
-- 正式发布用 `python scripts/build_release.py --ref v0.24`，或传入对应的 Git 提交。ZIP 的 `SOURCE-REVISION` 记录版本及完整提交哈希。脚本从该 Git 快照打包，并在解压副本上检查文档入口、索引、链接和测试。省略 `--ref` 时输出独立的 `-preview.zip`，用于验证工作区改动。
+- 正式发布用 `python scripts/build_release.py --ref v0.25`，或传入对应的 Git 提交。ZIP 的 `SOURCE-REVISION` 记录版本及完整提交哈希。脚本从该 Git 快照打包，并在解压副本上检查文档入口、索引、链接和测试。省略 `--ref` 时输出独立的 `-preview.zip`，用于验证工作区改动。
 - 在业务仓库运行结构校验后，继续执行项目测试和评审。网页内容和 Java 方法证据由维护者或项目工具核实。跨模块召回率及长期维护成本需要真实任务验证。
-- 新安装的 CI 检查知识目录的本地链接与常见标题锚点，在 PR 中提示需要复核的知识。升级后的仓库可将检查接入现有工作流。
+- 新安装的 CI 检查知识目录的本地链接与常见标题锚点。PR 使用严格同步，有待复核时检查失败。升级保留已有工作流。要限制合并，在托管仓库的分支规则中设为必需检查。
 - 套件自用索引通过 `python scripts/knowledge.py --registry docs/self/registry.json validate --strict` 单独校验。共享 CI 默认检查目标项目的通用索引，本仓库还通过本地全量测试和发布验证复核自用资料。
 
 [工具测试](../../scripts/test_knowledge.py) · [套件 CI](../../.github/workflows/knowledge.yml) · [自用资料入口验收](../../scripts/test_self_knowledge.py)
